@@ -3,6 +3,12 @@
 import { useEffect, useState } from "react";
 import { t } from "../lib/i18n";
 import { supabase } from "../lib/supabaseClient";
+import {
+  computeStats,
+  computeStreak,
+  computeReviews,
+  BADGES,
+} from "../lib/gamification";
 
 // Уровень усвоения по максимальной верно решённой сложности
 function levelLabel(lang, maxCorrectDifficulty) {
@@ -23,7 +29,8 @@ function levelLabel(lang, maxCorrectDifficulty) {
   };
   const map = lang === "ru" ? ru : en;
   for (const cap of [2, 4, 6, 8, 10]) {
-    if (maxCorrectDifficulty <= cap) return `${map[cap]} (${maxCorrectDifficulty}/10)`;
+    if (maxCorrectDifficulty <= cap)
+      return `${map[cap]} (${maxCorrectDifficulty}/10)`;
   }
   return "—";
 }
@@ -38,26 +45,44 @@ function fmtTime(lang, sec) {
   }`;
 }
 
-export default function ProgressView({ lang, subjects, topics }) {
-  const [attempts, setAttempts] = useState(null);
-  const [tests, setTests] = useState(null);
+export default function ProgressView({ lang, userId, onSelectTopic }) {
+  const [data, setData] = useState(null); // {subjects, topics, attempts, tests}
 
   useEffect(() => {
+    if (!userId) return;
     (async () => {
-      const [a, ts] = await Promise.all([
+      const [s, tp, a, ts] = await Promise.all([
+        supabase
+          .from("subjects")
+          .select("id, name")
+          .eq("user_id", userId)
+          .order("position")
+          .order("created_at"),
+        supabase
+          .from("topics")
+          .select("id, subject_id, parent_id, name")
+          .eq("user_id", userId)
+          .order("position")
+          .order("created_at"),
         supabase
           .from("practice_attempts")
-          .select("topic_id, difficulty, correct, time_sec"),
+          .select("topic_id, difficulty, correct, time_sec, created_at")
+          .eq("user_id", userId),
         supabase
           .from("tests")
-          .select("topic_id, status, score, answers, finished_at"),
+          .select("topic_id, status, score, answers, started_at, finished_at")
+          .eq("user_id", userId),
       ]);
-      setAttempts(a.data || []);
-      setTests(ts.data || []);
+      setData({
+        subjects: s.data || [],
+        topics: tp.data || [],
+        attempts: a.data || [],
+        tests: ts.data || [],
+      });
     })();
-  }, []);
+  }, [userId]);
 
-  if (!attempts || !tests) {
+  if (!data) {
     return (
       <div className="py-16 text-center opacity-70 animate-pulse">
         {t(lang, "loading")}
@@ -65,8 +90,22 @@ export default function ProgressView({ lang, subjects, topics }) {
     );
   }
 
-  // Агрегация по темам
+  const { subjects, topics, attempts, tests } = data;
+
+  // Геймификация
+  const stats = computeStats(attempts, tests);
+  const streak = computeStreak(stats.dates);
+  const earned = BADGES.filter((b) => b.cond(stats, streak));
+
+  // Агрегация по темам + последняя активность
   const byTopic = {};
+  const lastActivity = {};
+  const touch = (topicId, ts) => {
+    if (!topicId || !ts) return;
+    const ms = new Date(ts).getTime();
+    lastActivity[topicId] = Math.max(lastActivity[topicId] || 0, ms);
+  };
+
   for (const a of attempts) {
     if (!a.topic_id) continue;
     const s = (byTopic[a.topic_id] ||= {
@@ -83,6 +122,7 @@ export default function ProgressView({ lang, subjects, topics }) {
       s.correct += 1;
       s.maxDiff = Math.max(s.maxDiff, a.difficulty);
     }
+    touch(a.topic_id, a.created_at);
   }
   for (const ts of tests) {
     if (!ts.topic_id) continue;
@@ -99,15 +139,16 @@ export default function ProgressView({ lang, subjects, topics }) {
       s.testsDone += 1;
       if (s.bestTest === null || ts.score > s.bestTest) s.bestTest = ts.score;
     }
+    touch(ts.topic_id, ts.finished_at || ts.started_at);
   }
 
-  // Сводка
-  const totalTime = Object.values(byTopic).reduce((s, x) => s + x.time, 0);
-  const totalSolved = Object.values(byTopic).reduce((s, x) => s + x.correct, 0);
-  const totalTests = Object.values(byTopic).reduce(
-    (s, x) => s + x.testsDone,
-    0
-  );
+  // Повторение пройденного
+  const reviews = computeReviews(lastActivity)
+    .map((r) => ({
+      ...r,
+      topic: topics.find((x) => x.id === r.topicId),
+    }))
+    .filter((r) => r.topic);
 
   function statusOf(s) {
     if (!s) return { label: t(lang, "statusNotStarted"), cls: "bg-black/5" };
@@ -126,12 +167,68 @@ export default function ProgressView({ lang, subjects, topics }) {
 
   return (
     <div>
+      {/* Геймификация */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="bg-white rounded-xl border border-black/10 p-4 text-center">
+          <div className="text-2xl font-semibold">🔥 {streak}</div>
+          <div className="text-sm opacity-60">{t(lang, "streakLbl")}</div>
+        </div>
+        <div className="bg-white rounded-xl border border-black/10 p-4 text-center">
+          <div className="text-2xl font-semibold">⭐ {stats.level}</div>
+          <div className="text-sm opacity-60">
+            {t(lang, "levelXp")}: {stats.xp}
+          </div>
+        </div>
+      </div>
+
+      {/* Значки */}
+      {earned.length > 0 && (
+        <div className="bg-white rounded-xl border border-black/10 p-4 mb-4">
+          <div className="text-sm opacity-60 mb-2">{t(lang, "badgesLbl")}</div>
+          <div className="flex flex-wrap gap-2">
+            {earned.map((b) => (
+              <span
+                key={b.id}
+                className="px-3 py-1.5 rounded-full bg-black/5 text-sm"
+                title={lang === "ru" ? b.ru : b.en}
+              >
+                {b.icon} {lang === "ru" ? b.ru : b.en}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Пора повторить */}
+      {reviews.length > 0 && (
+        <div className="bg-white rounded-xl border border-accent/40 p-4 mb-6">
+          <div className="text-sm font-semibold mb-2">
+            🔄 {t(lang, "reviewTitle")}
+          </div>
+          <div className="space-y-1">
+            {reviews.map((r) => (
+              <button
+                key={r.topicId}
+                onClick={() => onSelectTopic && onSelectTopic(r.topicId)}
+                disabled={!onSelectTopic}
+                className="w-full text-left px-3 py-2 rounded-lg hover:bg-black/5 text-sm flex justify-between disabled:cursor-default"
+              >
+                <span>{r.topic.name}</span>
+                <span className="opacity-60">
+                  {r.daysAgo} {t(lang, "daysAgo")}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Сводка */}
       <div className="grid grid-cols-3 gap-3 mb-8">
         {[
-          [t(lang, "totalTime"), fmtTime(lang, totalTime)],
-          [t(lang, "tasksSolved"), totalSolved],
-          [t(lang, "testsPassed"), totalTests],
+          [t(lang, "totalTime"), fmtTime(lang, stats.time)],
+          [t(lang, "tasksSolved"), stats.solved],
+          [t(lang, "testsPassed"), stats.testsDone],
         ].map(([label, value]) => (
           <div
             key={label}
@@ -194,9 +291,7 @@ export default function ProgressView({ lang, subjects, topics }) {
                             {st.label}
                           </span>
                         </td>
-                        <td className="px-4 py-2">
-                          {fmtTime(lang, s?.time)}
-                        </td>
+                        <td className="px-4 py-2">{fmtTime(lang, s?.time)}</td>
                         <td className="px-4 py-2">
                           {s?.total ? `${s.correct}/${s.total}` : "—"}
                         </td>
@@ -213,9 +308,7 @@ export default function ProgressView({ lang, subjects, topics }) {
         );
       })}
 
-      {!subjects.length && (
-        <p className="opacity-60">{t(lang, "noSubjects")}</p>
-      )}
+      {!subjects.length && <p className="opacity-60">{t(lang, "noSubjects")}</p>}
     </div>
   );
 }

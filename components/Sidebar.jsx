@@ -16,6 +16,7 @@ export default function Sidebar({
   onToggleLang,
   onOpenApiKey,
   onOpenTheme,
+  onOpenParent,
   onLogout,
   onComingSoon,
   onNewSubject,
@@ -113,6 +114,17 @@ export default function Sidebar({
           onClick={() => onSelect({ section: "progress" })}
         >
           {t(lang, "progress")}
+        </button>
+        <button
+          className={`${item} ${
+            selection?.section === "children" ? "bg-black/10" : ""
+          }`}
+          onClick={() => onSelect({ section: "children" })}
+        >
+          {t(lang, "children")}
+        </button>
+        <button className={item} onClick={onOpenParent}>
+          {t(lang, "parentShare")}
         </button>
       </nav>
 

@@ -10,6 +10,8 @@ import PracticeView from "../components/PracticeView";
 import TestView from "../components/TestView";
 import ProgressView from "../components/ProgressView";
 import ThemeModal from "../components/ThemeModal";
+import ParentLinkModal from "../components/ParentLinkModal";
+import ChildrenView from "../components/ChildrenView";
 import {
   applyThemePref,
   loadThemePref,
@@ -25,6 +27,7 @@ export default function Home() {
   const [lang, setLang] = useState("ru");
   const [showApiKey, setShowApiKey] = useState(false);
   const [showTheme, setShowTheme] = useState(false);
+  const [showParent, setShowParent] = useState(false);
   const [toast, setToast] = useState("");
 
   const [sidebarWidth, setSidebarWidth] = useState(288);
@@ -230,6 +233,7 @@ export default function Home() {
         onToggleLang={toggleLang}
         onOpenApiKey={() => setShowApiKey(true)}
         onOpenTheme={() => setShowTheme(true)}
+        onOpenParent={() => setShowParent(true)}
         onLogout={logout}
         onComingSoon={comingSoon}
         onNewSubject={() => setModal({ type: "subject" })}
@@ -253,7 +257,20 @@ export default function Home() {
             <h1 className="text-2xl font-semibold mb-6">
               {t(lang, "progress")}
             </h1>
-            <ProgressView lang={lang} subjects={subjects} topics={topics} />
+            <ProgressView
+              lang={lang}
+              userId={session.user.id}
+              onSelectTopic={(topicId) =>
+                setSelection({ topicId, section: "practice" })
+              }
+            />
+          </div>
+        ) : selection?.section === "children" ? (
+          <div className="max-w-3xl mx-auto">
+            <h1 className="text-2xl font-semibold mb-6">
+              {t(lang, "children")}
+            </h1>
+            <ChildrenView lang={lang} />
           </div>
         ) : selection && selectedTopic ? (
           <div className="max-w-2xl mx-auto">
@@ -307,6 +324,14 @@ export default function Home() {
 
       {showTheme && (
         <ThemeModal lang={lang} onClose={() => setShowTheme(false)} />
+      )}
+
+      {showParent && (
+        <ParentLinkModal
+          lang={lang}
+          session={session}
+          onClose={() => setShowParent(false)}
+        />
       )}
 
       {modal && (
