@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "../components/Sidebar";
 import ApiKeyModal from "../components/ApiKeyModal";
 import NameModal from "../components/NameModal";
+import TheoryView from "../components/TheoryView";
 import { t } from "../lib/i18n";
 import { supabase } from "../lib/supabaseClient";
 import { algebraSeed } from "../lib/seedAlgebra";
@@ -181,6 +182,17 @@ export default function Home() {
     (x) => x.id === selectedTopic?.subject_id
   );
 
+  // Полный путь темы (с родителями) — для контекста ИИ и ключа кэша
+  function topicPath(topic) {
+    const parts = [topic.name];
+    let cur = topic;
+    while (cur?.parent_id) {
+      cur = topics.find((x) => x.id === cur.parent_id);
+      if (cur) parts.unshift(cur.name);
+    }
+    return parts.join(" → ");
+  }
+
   if (!session) {
     return (
       <div className="h-screen flex items-center justify-center opacity-50">
@@ -227,7 +239,15 @@ export default function Home() {
             <h1 className="text-2xl font-semibold mb-4">
               {t(lang, selection.section)}
             </h1>
-            <p className="opacity-70">{t(lang, "contentSoon")}</p>
+            {selection.section === "theory" ? (
+              <TheoryView
+                lang={lang}
+                subjectName={selectedSubject?.name || ""}
+                topicName={topicPath(selectedTopic)}
+              />
+            ) : (
+              <p className="opacity-70">{t(lang, "contentSoon")}</p>
+            )}
           </div>
         ) : (
           <div className="h-full flex items-center justify-center">

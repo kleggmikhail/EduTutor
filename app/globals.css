@@ -5,3 +5,18 @@
 body {
   @apply bg-surface text-ink antialiased;
 }
+
+/* Типографика сгенерированной теории */
+.theory-content h1 { @apply text-2xl font-semibold mt-6 mb-3; }
+.theory-content h2 { @apply text-xl font-semibold mt-6 mb-3; }
+.theory-content h3 { @apply text-lg font-semibold mt-4 mb-2; }
+.theory-content p { @apply my-3 leading-relaxed; }
+.theory-content ul { @apply list-disc pl-6 my-3; }
+.theory-content ol { @apply list-decimal pl-6 my-3; }
+.theory-content li { @apply my-1; }
+.theory-content table { @apply border-collapse my-4; }
+.theory-content th, .theory-content td { @apply border border-black/20 px-3 py-1; }
+.theory-content code { @apply bg-black/5 px-1 rounded; }
+.theory-content blockquote { @apply border-l-4 border-accent/40 pl-4 my-3 opacity-80; }
+.theory-content svg { @apply my-4 mx-auto block; }
+.theory-content .katex-display { @apply my-4 overflow-x-auto; }
