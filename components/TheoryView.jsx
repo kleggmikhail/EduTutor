@@ -10,6 +10,7 @@ import { supabase } from "../lib/supabaseClient";
 export default function TheoryView({ lang, subjectName, topicName }) {
   const [status, setStatus] = useState("loading"); // loading | generating | ready | nokey | error
   const [content, setContent] = useState("");
+  const [errDetail, setErrDetail] = useState("");
   const ref = useRef(null);
 
   const load = useCallback(
@@ -36,6 +37,8 @@ export default function TheoryView({ lang, subjectName, topicName }) {
           return;
         }
         if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          setErrDetail([j.error, j.detail].filter(Boolean).join(": "));
           setStatus("error");
           return;
         }
@@ -86,7 +89,12 @@ export default function TheoryView({ lang, subjectName, topicName }) {
   if (status === "error") {
     return (
       <div className="py-16 text-center">
-        <p className="mb-4">{t(lang, "errorGeneric")}</p>
+        <p className="mb-2">{t(lang, "errorGeneric")}</p>
+        {errDetail && (
+          <p className="mb-4 text-xs opacity-60 break-all max-w-md mx-auto">
+            {errDetail}
+          </p>
+        )}
         <button
           onClick={() => load()}
           className="px-4 py-2 rounded-lg bg-accent text-white"

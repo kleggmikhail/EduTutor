@@ -7,7 +7,7 @@ import { supabase } from "../lib/supabaseClient";
 export default function ApiKeyModal({ lang, onClose }) {
   const [key, setKey] = useState("");
   const [status, setStatus] = useState("loading"); // loading | set | notset | saving | invalid | error
-  const [hasKey, setHasKey] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -18,10 +18,11 @@ export default function ApiKeyModal({ lang, onClose }) {
           headers: { Authorization: `Bearer ${token}` },
         });
         const json = await res.json();
-        setHasKey(!!json.hasKey);
         setStatus(json.hasKey ? "set" : "notset");
+        setEditing(!json.hasKey);
       } catch {
         setStatus("notset");
+        setEditing(true);
       }
     })();
   }, []);
@@ -41,9 +42,7 @@ export default function ApiKeyModal({ lang, onClose }) {
         body: JSON.stringify({ apiKey: key.trim() }),
       });
       if (res.ok) {
-        setHasKey(true);
-        setStatus("set");
-        setKey("");
+        onClose(); // сохранено успешно — окно закрывается само
       } else if (res.status === 422) {
         setStatus("invalid");
       } else {
@@ -54,6 +53,8 @@ export default function ApiKeyModal({ lang, onClose }) {
     }
   }
 
+  const showForm = editing || status === "invalid" || status === "error";
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md p-6">
@@ -61,6 +62,9 @@ export default function ApiKeyModal({ lang, onClose }) {
         <p className="text-sm opacity-70 mb-3">{t(lang, "apiKeyHint")}</p>
 
         <div className="text-sm mb-3">
+          {status === "loading" && (
+            <span className="opacity-60">{t(lang, "loading")}</span>
+          )}
           {status === "set" && (
             <span className="text-green-700">✓ {t(lang, "apiKeySet")}</span>
           )}
@@ -75,29 +79,52 @@ export default function ApiKeyModal({ lang, onClose }) {
           )}
         </div>
 
-        <input
-          type="password"
-          value={key}
-          onChange={(e) => setKey(e.target.value)}
-          placeholder={t(lang, "apiKeyPlaceholder")}
-          className="w-full border border-black/20 rounded-lg px-3 py-2 mb-4 bg-white"
-        />
+        {/* Ключ уже есть: оставить или заменить */}
+        {!showForm && status === "set" && (
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setEditing(true)}
+              className="px-4 py-2 rounded-lg hover:bg-black/5"
+            >
+              {t(lang, "replaceKey")}
+            </button>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg bg-accent text-white"
+            >
+              {t(lang, "close")}
+            </button>
+          </div>
+        )}
 
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg hover:bg-black/5"
-          >
-            {t(lang, "cancel")}
-          </button>
-          <button
-            onClick={save}
-            disabled={status === "saving"}
-            className="px-4 py-2 rounded-lg bg-accent text-white disabled:opacity-50"
-          >
-            {status === "saving" ? t(lang, "saving") : t(lang, "save")}
-          </button>
-        </div>
+        {/* Ввод нового ключа */}
+        {showForm && (
+          <>
+            <input
+              type="password"
+              autoFocus
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              placeholder={t(lang, "apiKeyPlaceholder")}
+              className="w-full border border-black/20 rounded-lg px-3 py-2 mb-4 bg-white"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 rounded-lg hover:bg-black/5"
+              >
+                {t(lang, "cancel")}
+              </button>
+              <button
+                onClick={save}
+                disabled={status === "saving" || !key.trim()}
+                className="px-4 py-2 rounded-lg bg-accent text-white disabled:opacity-50"
+              >
+                {status === "saving" ? t(lang, "saving") : t(lang, "save")}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
