@@ -2,21 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { mdWithMath } from "../lib/markdownMath";
-import renderMathInElement from "katex/contrib/auto-render";
 import "katex/dist/katex.min.css";
 import { t } from "../lib/i18n";
 import { supabase } from "../lib/supabaseClient";
 import MathToolbar from "./MathToolbar";
-
-const KATEX_OPTS = {
-  delimiters: [
-    { left: "$$", right: "$$", display: true },
-    { left: "$", right: "$", display: false },
-    { left: "\\(", right: "\\)", display: false },
-    { left: "\\[", right: "\\]", display: true },
-  ],
-  throwOnError: false,
-};
 
 async function authHeaders() {
   const { data } = await supabase.auth.getSession();
@@ -173,15 +162,6 @@ export default function PracticeView({
     reader.readAsDataURL(f);
     e.target.value = "";
   }
-
-  // Формулы
-  useEffect(() => {
-    if (boxRef.current && (task || verdict)) {
-      try {
-        renderMathInElement(boxRef.current, KATEX_OPTS);
-      } catch {}
-    }
-  }, [task, verdict, phase]);
 
   if (phase === "init" || phase === "loading") {
     return (

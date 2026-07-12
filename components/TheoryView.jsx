@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { mdWithMath } from "../lib/markdownMath";
-import renderMathInElement from "katex/contrib/auto-render";
 import "katex/dist/katex.min.css";
 import { t } from "../lib/i18n";
 import { supabase } from "../lib/supabaseClient";
@@ -55,23 +54,6 @@ export default function TheoryView({ lang, subjectName, topicName }) {
   useEffect(() => {
     load();
   }, [load]);
-
-  // Рендер формул после вставки HTML
-  useEffect(() => {
-    if (status === "ready" && ref.current) {
-      try {
-        renderMathInElement(ref.current, {
-          delimiters: [
-            { left: "$$", right: "$$", display: true },
-            { left: "$", right: "$", display: false },
-            { left: "\\(", right: "\\)", display: false },
-            { left: "\\[", right: "\\]", display: true },
-          ],
-          throwOnError: false,
-        });
-      } catch {}
-    }
-  }, [status, content]);
 
   if (status === "loading" || status === "generating") {
     return (
