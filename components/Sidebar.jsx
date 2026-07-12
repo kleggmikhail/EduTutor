@@ -7,6 +7,7 @@ const SECTIONS = ["theory", "practice", "test"];
 
 export default function Sidebar({
   lang,
+  width,
   userEmail,
   subjects,
   topics,
@@ -81,7 +82,10 @@ export default function Sidebar({
   }
 
   return (
-    <aside className="w-72 shrink-0 h-screen bg-sidebar border-r border-black/10 flex flex-col">
+    <aside
+      style={{ width: width || 288 }}
+      className="shrink-0 h-screen bg-sidebar border-r border-black/10 flex flex-col"
+    >
       <div className="px-4 py-4 font-semibold text-lg">{t(lang, "appName")}</div>
 
       {/* Верхняя часть: меню */}

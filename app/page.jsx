@@ -16,6 +16,7 @@ export default function Home() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [toast, setToast] = useState("");
 
+  const [sidebarWidth, setSidebarWidth] = useState(288);
   const [subjects, setSubjects] = useState([]);
   const [topics, setTopics] = useState([]);
   const [selection, setSelection] = useState(null); // {topicId, section}
@@ -24,6 +25,8 @@ export default function Home() {
   useEffect(() => {
     const saved = localStorage.getItem("edututor_lang");
     if (saved) setLang(saved);
+    const w = parseInt(localStorage.getItem("edututor_sidebar_w"), 10);
+    if (w >= 200 && w <= 640) setSidebarWidth(w);
 
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session ?? null);
@@ -153,6 +156,26 @@ export default function Home() {
     loadTree();
   }
 
+  // Перетаскивание границы левой панели
+  function startResize(e) {
+    e.preventDefault();
+    const move = (ev) => {
+      const w = Math.min(640, Math.max(200, ev.clientX));
+      setSidebarWidth(w);
+      localStorage.setItem("edututor_sidebar_w", String(w));
+    };
+    const stop = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", stop);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", stop);
+  }
+
   const selectedTopic = topics.find((x) => x.id === selection?.topicId);
   const selectedSubject = subjects.find(
     (x) => x.id === selectedTopic?.subject_id
@@ -170,6 +193,7 @@ export default function Home() {
     <div className="flex h-screen">
       <Sidebar
         lang={lang}
+        width={sidebarWidth}
         userEmail={session.user.email}
         subjects={subjects}
         topics={topics}
@@ -184,6 +208,13 @@ export default function Home() {
         onDeleteSubject={deleteSubject}
         onDeleteTopic={deleteTopic}
         onSeed={seedAlgebra}
+      />
+
+      {/* Перетаскиваемая граница панели */}
+      <div
+        onMouseDown={startResize}
+        className="w-1 shrink-0 cursor-col-resize hover:bg-accent/40 active:bg-accent/60"
+        title="⟷"
       />
 
       {/* Правая рабочая область */}
