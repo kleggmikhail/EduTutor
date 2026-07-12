@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { marked } from "marked";
+import { mdWithMath } from "../lib/markdownMath";
 import renderMathInElement from "katex/contrib/auto-render";
 import "katex/dist/katex.min.css";
 import { t } from "../lib/i18n";
@@ -224,7 +224,7 @@ export default function PracticeView({
       {/* Задание */}
       <div
         className="theory-content bg-white rounded-xl border border-black/10 p-5 mb-4"
-        dangerouslySetInnerHTML={{ __html: marked.parse(task) }}
+        dangerouslySetInnerHTML={{ __html: mdWithMath(task) }}
       />
 
       {/* Разбор */}
@@ -244,7 +244,7 @@ export default function PracticeView({
           <div
             className="theory-content"
             dangerouslySetInnerHTML={{
-              __html: marked.parse(verdict.feedback_md || ""),
+              __html: mdWithMath(verdict.feedback_md || ""),
             }}
           />
         </div>

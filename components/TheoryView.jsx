@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { marked } from "marked";
+import { mdWithMath } from "../lib/markdownMath";
 import renderMathInElement from "katex/contrib/auto-render";
 import "katex/dist/katex.min.css";
 import { t } from "../lib/i18n";
@@ -110,7 +110,7 @@ export default function TheoryView({ lang, subjectName, topicName }) {
       <div
         ref={ref}
         className="theory-content"
-        dangerouslySetInnerHTML={{ __html: marked.parse(content) }}
+        dangerouslySetInnerHTML={{ __html: mdWithMath(content) }}
       />
       <div className="mt-8 pt-4 border-t border-black/10">
         <button

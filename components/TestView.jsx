@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { marked } from "marked";
+import { mdWithMath } from "../lib/markdownMath";
 import renderMathInElement from "katex/contrib/auto-render";
 import "katex/dist/katex.min.css";
 import { t } from "../lib/i18n";
@@ -181,7 +181,7 @@ export default function TestView({ lang, subjectName, topicPath, topicId }) {
         <div
           className="theory-content bg-white rounded-xl border border-black/10 p-5 mb-6"
           dangerouslySetInnerHTML={{
-            __html: marked.parse(result.grade_md || ""),
+            __html: mdWithMath(result.grade_md || ""),
           }}
         />
         <button
@@ -205,7 +205,7 @@ export default function TestView({ lang, subjectName, topicPath, topicId }) {
 
       <div
         className="theory-content bg-white rounded-xl border border-black/10 p-5 mb-4"
-        dangerouslySetInnerHTML={{ __html: marked.parse(task) }}
+        dangerouslySetInnerHTML={{ __html: mdWithMath(task) }}
       />
 
       <MathToolbar taRef={taRef} value={solution} setValue={setSolution} />
