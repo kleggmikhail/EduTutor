@@ -6,6 +6,7 @@ import renderMathInElement from "katex/contrib/auto-render";
 import "katex/dist/katex.min.css";
 import { t } from "../lib/i18n";
 import { supabase } from "../lib/supabaseClient";
+import MathToolbar from "./MathToolbar";
 
 const KATEX_OPTS = {
   delimiters: [
@@ -16,27 +17,6 @@ const KATEX_OPTS = {
   ],
   throwOnError: false,
 };
-
-// Панель математических символов: {подпись, вставка, смещение курсора}
-const MATH_BUTTONS = [
-  { l: "+", i: "+" },
-  { l: "−", i: "−" },
-  { l: "×", i: "×" },
-  { l: "÷", i: "÷" },
-  { l: "a/b", i: "/" },
-  { l: "=", i: "=" },
-  { l: "√", i: "√()", o: -1 },
-  { l: "x²", i: "²" },
-  { l: "x³", i: "³" },
-  { l: "xⁿ", i: "^" },
-  { l: "π", i: "π" },
-  { l: "±", i: "±" },
-  { l: "≤", i: "≤" },
-  { l: "≥", i: "≥" },
-  { l: "≠", i: "≠" },
-  { l: "( )", i: "()", o: -1 },
-  { l: "|x|", i: "||", o: -1 },
-];
 
 async function authHeaders() {
   const { data } = await supabase.auth.getSession();
@@ -64,20 +44,6 @@ export default function PracticeView({
   const boxRef = useRef(null);
   const fileRef = useRef(null);
   const taRef = useRef(null);
-
-  // Вставка символа в позицию курсора
-  function insertSym(ins, off = 0) {
-    const ta = taRef.current;
-    if (!ta) return;
-    const s = ta.selectionStart ?? solution.length;
-    const e = ta.selectionEnd ?? solution.length;
-    setSolution(solution.slice(0, s) + ins + solution.slice(e));
-    requestAnimationFrame(() => {
-      ta.focus();
-      const pos = s + ins.length + off;
-      ta.setSelectionRange(pos, pos);
-    });
-  }
 
   // Стартовая сложность — продолжить с уровня последней попытки
   useEffect(() => {
@@ -287,19 +253,7 @@ export default function PracticeView({
       {/* Окно решения */}
       {(phase === "solving" || phase === "checking") && (
         <>
-          {/* Панель математических символов */}
-          <div className="flex flex-wrap gap-1 mb-2">
-            {MATH_BUTTONS.map((b) => (
-              <button
-                key={b.l}
-                type="button"
-                onClick={() => insertSym(b.i, b.o || 0)}
-                className="px-2.5 py-1 rounded-md bg-black/5 hover:bg-black/10 text-sm font-mono"
-              >
-                {b.l}
-              </button>
-            ))}
-          </div>
+          <MathToolbar taRef={taRef} value={solution} setValue={setSolution} />
           <textarea
             ref={taRef}
             value={solution}

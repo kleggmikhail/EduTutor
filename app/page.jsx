@@ -7,6 +7,7 @@ import ApiKeyModal from "../components/ApiKeyModal";
 import NameModal from "../components/NameModal";
 import TheoryView from "../components/TheoryView";
 import PracticeView from "../components/PracticeView";
+import TestView from "../components/TestView";
 import { t } from "../lib/i18n";
 import { supabase } from "../lib/supabaseClient";
 import { algebraSeed } from "../lib/seedAlgebra";
@@ -249,6 +250,14 @@ export default function Home() {
             ) : selection.section === "practice" ? (
               <PracticeView
                 key={selectedTopic.id + lang}
+                lang={lang}
+                subjectName={selectedSubject?.name || ""}
+                topicPath={topicPath(selectedTopic)}
+                topicId={selectedTopic.id}
+              />
+            ) : selection.section === "test" ? (
+              <TestView
+                key={selectedTopic.id + lang + "test"}
                 lang={lang}
                 subjectName={selectedSubject?.name || ""}
                 topicPath={topicPath(selectedTopic)}
