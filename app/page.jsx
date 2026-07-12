@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "../components/Sidebar";
 import ApiKeyModal from "../components/ApiKeyModal";
+import NameModal from "../components/NameModal";
 import { t } from "../lib/i18n";
 import { supabase } from "../lib/supabaseClient";
+import { algebraSeed } from "../lib/seedAlgebra";
 
 export default function Home() {
   const router = useRouter();
@@ -13,6 +15,11 @@ export default function Home() {
   const [lang, setLang] = useState("ru");
   const [showApiKey, setShowApiKey] = useState(false);
   const [toast, setToast] = useState("");
+
+  const [subjects, setSubjects] = useState([]);
+  const [topics, setTopics] = useState([]);
+  const [selection, setSelection] = useState(null); // {topicId, section}
+  const [modal, setModal] = useState(null); // {type:'subject'} | {type:'topic', subjectId}
 
   useEffect(() => {
     const saved = localStorage.getItem("edututor_lang");
@@ -31,11 +38,32 @@ export default function Home() {
     if (session === null) router.replace("/login");
   }, [session, router]);
 
+  const loadTree = useCallback(async () => {
+    if (!session?.user) return;
+    const [s, tp] = await Promise.all([
+      supabase
+        .from("subjects")
+        .select("id, name")
+        .order("position")
+        .order("created_at"),
+      supabase
+        .from("topics")
+        .select("id, subject_id, parent_id, name")
+        .order("position")
+        .order("created_at"),
+    ]);
+    if (!s.error) setSubjects(s.data || []);
+    if (!tp.error) setTopics(tp.data || []);
+  }, [session]);
+
+  useEffect(() => {
+    loadTree();
+  }, [loadTree]);
+
   async function toggleLang() {
     const next = lang === "ru" ? "en" : "ru";
     setLang(next);
     localStorage.setItem("edututor_lang", next);
-    // Сохраняем и в профиле пользователя
     if (session?.user) {
       await supabase
         .from("user_settings")
@@ -53,6 +81,83 @@ export default function Home() {
     setTimeout(() => setToast(""), 2000);
   }
 
+  async function addSubject(name) {
+    const { error } = await supabase
+      .from("subjects")
+      .insert({ user_id: session.user.id, name });
+    if (error) setToast(t(lang, "errorGeneric"));
+    loadTree();
+  }
+
+  async function addTopic(subjectId, name, parentId = null) {
+    const { error } = await supabase.from("topics").insert({
+      user_id: session.user.id,
+      subject_id: subjectId,
+      parent_id: parentId,
+      name,
+    });
+    if (error) setToast(t(lang, "errorGeneric"));
+    loadTree();
+  }
+
+  async function deleteSubject(id) {
+    if (!confirm(t(lang, "confirmDeleteSubject"))) return;
+    await supabase.from("subjects").delete().eq("id", id);
+    setSelection(null);
+    loadTree();
+  }
+
+  async function deleteTopic(id) {
+    if (!confirm(t(lang, "confirmDeleteTopic"))) return;
+    await supabase.from("topics").delete().eq("id", id);
+    if (selection?.topicId === id) setSelection(null);
+    loadTree();
+  }
+
+  // Загрузка стартового предмета «Алгебра» из документа
+  async function seedAlgebra() {
+    const seed = algebraSeed[lang] || algebraSeed.ru;
+    const { data: subj, error } = await supabase
+      .from("subjects")
+      .insert({ user_id: session.user.id, name: seed.subject })
+      .select("id")
+      .single();
+    if (error || !subj) {
+      setToast(t(lang, "errorGeneric"));
+      return;
+    }
+    for (let i = 0; i < seed.topics.length; i++) {
+      const tdef = seed.topics[i];
+      const { data: parent } = await supabase
+        .from("topics")
+        .insert({
+          user_id: session.user.id,
+          subject_id: subj.id,
+          name: tdef.name,
+          position: i,
+        })
+        .select("id")
+        .single();
+      if (parent && tdef.children.length) {
+        await supabase.from("topics").insert(
+          tdef.children.map((c, j) => ({
+            user_id: session.user.id,
+            subject_id: subj.id,
+            parent_id: parent.id,
+            name: c,
+            position: j,
+          }))
+        );
+      }
+    }
+    loadTree();
+  }
+
+  const selectedTopic = topics.find((x) => x.id === selection?.topicId);
+  const selectedSubject = subjects.find(
+    (x) => x.id === selectedTopic?.subject_id
+  );
+
   if (!session) {
     return (
       <div className="h-screen flex items-center justify-center opacity-50">
@@ -66,24 +171,62 @@ export default function Home() {
       <Sidebar
         lang={lang}
         userEmail={session.user.email}
+        subjects={subjects}
+        topics={topics}
+        selection={selection}
+        onSelect={setSelection}
         onToggleLang={toggleLang}
         onOpenApiKey={() => setShowApiKey(true)}
         onLogout={logout}
         onComingSoon={comingSoon}
+        onNewSubject={() => setModal({ type: "subject" })}
+        onNewTopic={(subjectId) => setModal({ type: "topic", subjectId })}
+        onDeleteSubject={deleteSubject}
+        onDeleteTopic={deleteTopic}
+        onSeed={seedAlgebra}
       />
 
       {/* Правая рабочая область */}
-      <main className="flex-1 flex items-center justify-center p-8">
-        <div className="max-w-md text-center">
-          <h1 className="text-2xl font-semibold mb-3">
-            {t(lang, "welcomeTitle")}
-          </h1>
-          <p className="opacity-70">{t(lang, "welcomeText")}</p>
-        </div>
+      <main className="flex-1 overflow-y-auto p-8">
+        {selection && selectedTopic ? (
+          <div className="max-w-2xl mx-auto">
+            <div className="text-sm opacity-60 mb-2">
+              {selectedSubject?.name} · {selectedTopic.name}
+            </div>
+            <h1 className="text-2xl font-semibold mb-4">
+              {t(lang, selection.section)}
+            </h1>
+            <p className="opacity-70">{t(lang, "contentSoon")}</p>
+          </div>
+        ) : (
+          <div className="h-full flex items-center justify-center">
+            <div className="max-w-md text-center">
+              <h1 className="text-2xl font-semibold mb-3">
+                {t(lang, "welcomeTitle")}
+              </h1>
+              <p className="opacity-70">{t(lang, "welcomeTreeText")}</p>
+            </div>
+          </div>
+        )}
       </main>
 
       {showApiKey && (
         <ApiKeyModal lang={lang} onClose={() => setShowApiKey(false)} />
+      )}
+
+      {modal && (
+        <NameModal
+          lang={lang}
+          placeholderKey={
+            modal.type === "subject" ? "subjectNamePh" : "topicNamePh"
+          }
+          onCreate={(name) =>
+            modal.type === "subject"
+              ? addSubject(name)
+              : addTopic(modal.subjectId, name)
+          }
+          onClose={() => setModal(null)}
+        />
       )}
 
       {toast && (
