@@ -4,10 +4,10 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        sidebar: "#f0eee6",
-        surface: "#faf9f5",
-        accent: "#c96442",
-        ink: "#3d3929",
+        sidebar: "rgb(var(--sidebar) / <alpha-value>)",
+        surface: "rgb(var(--surface) / <alpha-value>)",
+        accent: "rgb(var(--accent) / <alpha-value>)",
+        ink: "rgb(var(--ink) / <alpha-value>)",
       },
     },
   },

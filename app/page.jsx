@@ -9,6 +9,12 @@ import TheoryView from "../components/TheoryView";
 import PracticeView from "../components/PracticeView";
 import TestView from "../components/TestView";
 import ProgressView from "../components/ProgressView";
+import ThemeModal from "../components/ThemeModal";
+import {
+  applyThemePref,
+  loadThemePref,
+  watchSystemTheme,
+} from "../lib/theme";
 import { t } from "../lib/i18n";
 import { supabase } from "../lib/supabaseClient";
 import { algebraSeed } from "../lib/seedAlgebra";
@@ -18,6 +24,7 @@ export default function Home() {
   const [session, setSession] = useState(undefined); // undefined = загрузка
   const [lang, setLang] = useState("ru");
   const [showApiKey, setShowApiKey] = useState(false);
+  const [showTheme, setShowTheme] = useState(false);
   const [toast, setToast] = useState("");
 
   const [sidebarWidth, setSidebarWidth] = useState(288);
@@ -32,13 +39,19 @@ export default function Home() {
     const w = parseInt(localStorage.getItem("edututor_sidebar_w"), 10);
     if (w >= 200 && w <= 640) setSidebarWidth(w);
 
+    applyThemePref(loadThemePref());
+    const unwatch = watchSystemTheme(loadThemePref);
+
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session ?? null);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
     });
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      sub.subscription.unsubscribe();
+      unwatch();
+    };
   }, []);
 
   useEffect(() => {
@@ -216,6 +229,7 @@ export default function Home() {
         onSelect={setSelection}
         onToggleLang={toggleLang}
         onOpenApiKey={() => setShowApiKey(true)}
+        onOpenTheme={() => setShowTheme(true)}
         onLogout={logout}
         onComingSoon={comingSoon}
         onNewSubject={() => setModal({ type: "subject" })}
@@ -289,6 +303,10 @@ export default function Home() {
 
       {showApiKey && (
         <ApiKeyModal lang={lang} onClose={() => setShowApiKey(false)} />
+      )}
+
+      {showTheme && (
+        <ThemeModal lang={lang} onClose={() => setShowTheme(false)} />
       )}
 
       {modal && (

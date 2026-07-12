@@ -15,6 +15,7 @@ export default function Sidebar({
   onSelect,
   onToggleLang,
   onOpenApiKey,
+  onOpenTheme,
   onLogout,
   onComingSoon,
   onNewSubject,
@@ -95,6 +96,9 @@ export default function Sidebar({
         </button>
         <button className={item} onClick={onToggleLang}>
           {t(lang, "language")}: {lang.toUpperCase()}
+        </button>
+        <button className={item} onClick={onOpenTheme}>
+          {t(lang, "theme")}
         </button>
         <button className={item} onClick={onOpenApiKey}>
           {t(lang, "apiKey")}

@@ -2,9 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-surface text-ink antialiased;
+/* Цветовые гаммы (RGB-каналы — для прозрачностей Tailwind) */
+:root {
+  --surface: 250 249 245;
+  --sidebar: 240 238 230;
+  --ink: 61 57 41;
+  --accent: 201 100 66;
 }
+
+[data-theme="dark"] {
+  --surface: 38 38 36;
+  --sidebar: 31 30 28;
+  --ink: 232 230 220;
+  --accent: 217 119 87;
+  color-scheme: dark;
+}
+
+body {
+  background-color: rgb(var(--surface));
+  color: rgb(var(--ink));
+  @apply antialiased;
+}
+
+/* Тёмная гамма: переопределение светлых утилит */
+[data-theme="dark"] .bg-white { background-color: #30302c; }
+[data-theme="dark"] .border-black\/10 { border-color: rgba(255, 255, 255, 0.12); }
+[data-theme="dark"] .border-black\/20 { border-color: rgba(255, 255, 255, 0.2); }
+[data-theme="dark"] .border-black\/5 { border-color: rgba(255, 255, 255, 0.08); }
+[data-theme="dark"] .bg-black\/5 { background-color: rgba(255, 255, 255, 0.08); }
+[data-theme="dark"] .bg-black\/10 { background-color: rgba(255, 255, 255, 0.14); }
+[data-theme="dark"] .hover\:bg-black\/5:hover { background-color: rgba(255, 255, 255, 0.08); }
+[data-theme="dark"] .hover\:bg-black\/10:hover { background-color: rgba(255, 255, 255, 0.14); }
+[data-theme="dark"] .bg-ink { background-color: #e8e6dc; }
+[data-theme="dark"] .bg-ink.text-white { color: #262624; }
+[data-theme="dark"] .text-green-700 { color: #7ec699; }
+[data-theme="dark"] .text-red-700 { color: #f28b82; }
+[data-theme="dark"] .bg-green-50 { background-color: rgba(80, 160, 100, 0.15); }
+[data-theme="dark"] .border-green-300 { border-color: rgba(126, 198, 153, 0.5); }
+[data-theme="dark"] .bg-red-50 { background-color: rgba(200, 80, 80, 0.15); }
+[data-theme="dark"] .border-red-300 { border-color: rgba(242, 139, 130, 0.5); }
+[data-theme="dark"] .bg-green-100 { background-color: rgba(80, 160, 100, 0.25); }
+[data-theme="dark"] .text-green-800 { color: #9fd8b4; }
+[data-theme="dark"] .bg-amber-100 { background-color: rgba(200, 160, 60, 0.25); }
+[data-theme="dark"] .text-amber-800 { color: #e6c882; }
 
 /* Типографика сгенерированной теории */
 .theory-content h1 { @apply text-2xl font-semibold mt-6 mb-3; }

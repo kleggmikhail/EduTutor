@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { t } from "../../lib/i18n";
 import { supabase } from "../../lib/supabaseClient";
+import { applyThemePref, loadThemePref } from "../../lib/theme";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function LoginPage() {
   useEffect(() => {
     const saved = localStorage.getItem("edututor_lang");
     if (saved) setLang(saved);
+    applyThemePref(loadThemePref());
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) router.replace("/");
     });
