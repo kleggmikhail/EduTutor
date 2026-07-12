@@ -102,7 +102,12 @@ export default function Sidebar({
         <button className={item} onClick={onNewSubject}>
           {t(lang, "newSubject")}
         </button>
-        <button className={item} onClick={onComingSoon}>
+        <button
+          className={`${item} ${
+            selection?.section === "progress" ? "bg-black/10" : ""
+          }`}
+          onClick={() => onSelect({ section: "progress" })}
+        >
           {t(lang, "progress")}
         </button>
       </nav>

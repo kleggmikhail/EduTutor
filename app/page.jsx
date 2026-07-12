@@ -8,6 +8,7 @@ import NameModal from "../components/NameModal";
 import TheoryView from "../components/TheoryView";
 import PracticeView from "../components/PracticeView";
 import TestView from "../components/TestView";
+import ProgressView from "../components/ProgressView";
 import { t } from "../lib/i18n";
 import { supabase } from "../lib/supabaseClient";
 import { algebraSeed } from "../lib/seedAlgebra";
@@ -233,7 +234,14 @@ export default function Home() {
 
       {/* Правая рабочая область */}
       <main className="flex-1 overflow-y-auto p-8">
-        {selection && selectedTopic ? (
+        {selection?.section === "progress" ? (
+          <div className="max-w-3xl mx-auto">
+            <h1 className="text-2xl font-semibold mb-6">
+              {t(lang, "progress")}
+            </h1>
+            <ProgressView lang={lang} subjects={subjects} topics={topics} />
+          </div>
+        ) : selection && selectedTopic ? (
           <div className="max-w-2xl mx-auto">
             <div className="text-sm opacity-60 mb-2">
               {selectedSubject?.name} · {selectedTopic.name}
