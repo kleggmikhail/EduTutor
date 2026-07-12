@@ -68,8 +68,8 @@ export default function TestView({ lang, subjectName, topicPath, topicId }) {
     }
   }
 
-  async function submit() {
-    if (!solution.trim()) return;
+  async function submit(skip = false) {
+    if (!skip && !solution.trim()) return;
     setPhase("checking");
     try {
       const res = await fetch("/api/test/answer", {
@@ -77,7 +77,8 @@ export default function TestView({ lang, subjectName, topicPath, topicId }) {
         headers: await authHeaders(),
         body: JSON.stringify({
           testId,
-          solution: solution.trim(),
+          solution: skip ? null : solution.trim(),
+          skip,
           timeSec: Math.round((Date.now() - qStartRef.current) / 1000),
         }),
       });
@@ -199,13 +200,24 @@ export default function TestView({ lang, subjectName, topicPath, topicId }) {
         className="w-full border border-black/20 rounded-xl px-4 py-3 bg-white mb-2"
         disabled={phase === "checking"}
       />
-      <button
-        onClick={submit}
-        disabled={phase === "checking" || !solution.trim()}
-        className="px-4 py-2 rounded-lg bg-accent text-white disabled:opacity-50"
-      >
-        {phase === "checking" ? t(lang, "gradingNext") : t(lang, "submit")}
-      </button>
+      <div className="flex gap-2">
+        <button
+          onClick={() => submit(false)}
+          disabled={phase === "checking" || !solution.trim()}
+          className="px-4 py-2 rounded-lg bg-accent text-white disabled:opacity-50"
+        >
+          {phase === "checking" ? t(lang, "gradingNext") : t(lang, "submit")}
+        </button>
+        <button
+          onClick={() => {
+            if (confirm(t(lang, "confirmSkip"))) submit(true);
+          }}
+          disabled={phase === "checking"}
+          className="px-4 py-2 rounded-lg bg-black/5 hover:bg-black/10 disabled:opacity-50"
+        >
+          {t(lang, "skip")}
+        </button>
+      </div>
     </div>
   );
 }

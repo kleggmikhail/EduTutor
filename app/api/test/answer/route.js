@@ -29,8 +29,8 @@ export async function POST(request) {
   if (error) return NextResponse.json({ error }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));
-  const { testId, solution, timeSec } = body;
-  if (!testId || !solution) {
+  const { testId, solution, timeSec, skip } = body;
+  if (!testId || (!solution && !skip)) {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
   }
 
@@ -51,26 +51,30 @@ export async function POST(request) {
   const currentTask = test.tasks[idx];
   const langName = test.language === "ru" ? "Russian" : "English";
 
-  // 1. Проверить ответ
+  // 1. Проверить ответ (пропуск = нерешённое, без обращения к ИИ)
   let verdict = { correct: false, note: "" };
-  try {
-    const raw = await callClaude(apiKey, {
-      system: gradeSystem(),
-      prompt: `Problem:\n${currentTask.task_md}\n\nStudent's solution:\n${solution}\n\nReturn JSON only.`,
-      maxTokens: 300,
-    });
-    verdict = extractJson(raw) || verdict;
-  } catch (e) {
-    return NextResponse.json(
-      { error: "ai_failed", detail: String(e.message).slice(0, 200) },
-      { status: 502 }
-    );
+  if (skip) {
+    verdict = { correct: false, note: "skipped by student" };
+  } else {
+    try {
+      const raw = await callClaude(apiKey, {
+        system: gradeSystem(),
+        prompt: `Problem:\n${currentTask.task_md}\n\nStudent's solution:\n${solution}\n\nReturn JSON only.`,
+        maxTokens: 300,
+      });
+      verdict = extractJson(raw) || verdict;
+    } catch (e) {
+      return NextResponse.json(
+        { error: "ai_failed", detail: String(e.message).slice(0, 200) },
+        { status: 502 }
+      );
+    }
   }
 
   const answers = [
     ...test.answers,
     {
-      solution: String(solution).slice(0, 4000),
+      solution: skip ? "[пропущено]" : String(solution).slice(0, 4000),
       correct: !!verdict.correct,
       note: verdict.note || "",
       time_sec: timeSec ? Number(timeSec) : null,
