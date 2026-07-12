@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { getUserFromRequest } from "../../../../lib/serverSupabase";
-import { getUserApiKey, callClaude } from "../../../../lib/ai";
+import {
+  getUserApiKey,
+  callClaudeLogged,
+  underDailyLimit,
+} from "../../../../lib/ai";
 import {
   TEST_LENGTH,
   taskSystem,
@@ -46,6 +50,9 @@ export async function POST(request) {
 
   const apiKey = await getUserApiKey(sb, user.id);
   if (!apiKey) return NextResponse.json({ error: "no_api_key" }, { status: 409 });
+  if (!(await underDailyLimit(sb, user.id))) {
+    return NextResponse.json({ error: "limit_reached" }, { status: 429 });
+  }
 
   const idx = test.current_index;
   const currentTask = test.tasks[idx];
@@ -57,7 +64,7 @@ export async function POST(request) {
     verdict = { correct: false, note: "skipped by student" };
   } else {
     try {
-      const raw = await callClaude(apiKey, {
+      const raw = await callClaudeLogged(sb, user.id, "test_grade", apiKey, {
         system: gradeSystem(),
         prompt: `Problem:\n${currentTask.task_md}\n\nStudent's solution:\n${solution}\n\nReturn JSON only.`,
         maxTokens: 300,
@@ -85,7 +92,7 @@ export async function POST(request) {
   if (idx + 1 < TEST_LENGTH) {
     let nextTask;
     try {
-      nextTask = await callClaude(apiKey, {
+      nextTask = await callClaudeLogged(sb, user.id, "test_task", apiKey, {
         system: taskSystem(langName),
         prompt: taskPrompt({
           subjectName: test.subject_name,
@@ -132,7 +139,7 @@ export async function POST(request) {
 
   let gradeMd;
   try {
-    gradeMd = await callClaude(apiKey, {
+    gradeMd = await callClaudeLogged(sb, user.id, "test_final", apiKey, {
       system: finalSystem(langName),
       prompt: `Subject: ${test.subject_name}
 Topic: ${test.topic_path}

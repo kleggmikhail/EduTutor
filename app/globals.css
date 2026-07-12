@@ -24,6 +24,26 @@ body {
   @apply antialiased;
 }
 
+/* Полировка элементов */
+button {
+  @apply transition-colors duration-150;
+}
+
+input,
+textarea {
+  @apply transition-shadow duration-150;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(var(--accent) / 0.45);
+}
+
+::selection {
+  background-color: rgb(var(--accent) / 0.25);
+}
+
 /* Тёмная гамма: переопределение светлых утилит */
 [data-theme="dark"] .bg-white { background-color: #30302c; }
 [data-theme="dark"] .border-black\/10 { border-color: rgba(255, 255, 255, 0.12); }

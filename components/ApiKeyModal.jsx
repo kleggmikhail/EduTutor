@@ -8,6 +8,7 @@ export default function ApiKeyModal({ lang, onClose }) {
   const [key, setKey] = useState("");
   const [status, setStatus] = useState("loading"); // loading | set | notset | saving | invalid | error
   const [editing, setEditing] = useState(false);
+  const [usage, setUsage] = useState(null); // {calls, inTok, outTok, cost}
 
   useEffect(() => {
     (async () => {
@@ -24,6 +25,24 @@ export default function ApiKeyModal({ lang, onClose }) {
         setStatus("notset");
         setEditing(true);
       }
+
+      // Расход за 30 дней (примерная оценка стоимости)
+      try {
+        const since = new Date(
+          Date.now() - 30 * 24 * 3600 * 1000
+        ).toISOString();
+        const { data: rows } = await supabase
+          .from("ai_usage")
+          .select("input_tokens, output_tokens")
+          .gte("created_at", since);
+        if (rows) {
+          const inTok = rows.reduce((s, r) => s + (r.input_tokens || 0), 0);
+          const outTok = rows.reduce((s, r) => s + (r.output_tokens || 0), 0);
+          // Ориентировочные ставки Sonnet: $3/млн вход, $15/млн выход
+          const cost = (inTok * 3 + outTok * 15) / 1e6;
+          setUsage({ calls: rows.length, inTok, outTok, cost });
+        }
+      } catch {}
     })();
   }, []);
 
@@ -60,6 +79,13 @@ export default function ApiKeyModal({ lang, onClose }) {
       <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md p-6">
         <h2 className="text-lg font-semibold mb-2">{t(lang, "apiKeyTitle")}</h2>
         <p className="text-sm opacity-70 mb-3">{t(lang, "apiKeyHint")}</p>
+
+        {usage && usage.calls > 0 && (
+          <div className="text-sm mb-3 px-3 py-2 rounded-lg bg-black/5">
+            {t(lang, "usage30d")}: {usage.calls} · ≈$
+            {usage.cost.toFixed(2)}
+          </div>
+        )}
 
         <div className="text-sm mb-3">
           {status === "loading" && (

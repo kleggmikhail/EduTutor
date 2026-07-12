@@ -3,7 +3,12 @@ import {
   supabaseForToken,
   tokenFromRequest,
 } from "../../../lib/serverSupabase";
-import { getUserApiKey, callClaude, AI_MODEL } from "../../../lib/ai";
+import {
+  getUserApiKey,
+  callClaudeLogged,
+  underDailyLimit,
+  AI_MODEL,
+} from "../../../lib/ai";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // генерация может занять до минуты
@@ -74,11 +79,19 @@ export async function POST(request) {
     return NextResponse.json({ error: "no_api_key" }, { status: 409 });
   }
 
+  if (!(await underDailyLimit(sb, user.id))) {
+    return NextResponse.json({ error: "limit_reached" }, { status: 429 });
+  }
+
   // 3. Генерация
   const { system, prompt } = buildPrompt(subjectName, topicName, lang);
   let content;
   try {
-    content = await callClaude(apiKey, { system, prompt, maxTokens: 6000 });
+    content = await callClaudeLogged(sb, user.id, "theory", apiKey, {
+      system,
+      prompt,
+      maxTokens: 6000,
+    });
   } catch (e) {
     return NextResponse.json(
       { error: "ai_failed", detail: String(e.message).slice(0, 200) },

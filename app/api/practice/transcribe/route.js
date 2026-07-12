@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { getUserFromRequest } from "../../../../lib/serverSupabase";
-import { getUserApiKey, callClaude } from "../../../../lib/ai";
+import {
+  getUserApiKey,
+  callClaudeLogged,
+  underDailyLimit,
+} from "../../../../lib/ai";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -18,6 +22,9 @@ export async function POST(request) {
 
   const apiKey = await getUserApiKey(sb, user.id);
   if (!apiKey) return NextResponse.json({ error: "no_api_key" }, { status: 409 });
+  if (!(await underDailyLimit(sb, user.id))) {
+    return NextResponse.json({ error: "limit_reached" }, { status: 429 });
+  }
 
   const langName = lang === "ru" ? "Russian" : "English";
   const system = `You transcribe a student's handwritten or typed solution from an image into plain text.
@@ -27,7 +34,7 @@ Keep the student's language (likely ${langName}). Preserve the step-by-step stru
 If the image contains no readable solution, output exactly: [empty]`;
 
   try {
-    const text = await callClaude(apiKey, {
+    const text = await callClaudeLogged(sb, user.id, "transcribe", apiKey, {
       system,
       prompt: [
         {

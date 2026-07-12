@@ -49,6 +49,10 @@ export default function TestView({ lang, subjectName, topicPath, topicId }) {
         body: JSON.stringify({ subjectName, topicPath, topicId, lang }),
       });
       if (res.status === 409) return setPhase("nokey");
+      if (res.status === 429) {
+        setErrDetail(t(lang, "limitReached"));
+        return setPhase("error");
+      }
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         setErrDetail([j.error, j.detail].filter(Boolean).join(": "));
@@ -83,6 +87,10 @@ export default function TestView({ lang, subjectName, topicPath, topicId }) {
         }),
       });
       if (res.status === 409) return setPhase("nokey");
+      if (res.status === 429) {
+        setErrDetail(t(lang, "limitReached"));
+        return setPhase("error");
+      }
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         setErrDetail([j.error, j.detail].filter(Boolean).join(": "));

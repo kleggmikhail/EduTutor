@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { getUserFromRequest } from "../../../../lib/serverSupabase";
-import { getUserApiKey, callClaude } from "../../../../lib/ai";
+import {
+  getUserApiKey,
+  callClaudeLogged,
+  underDailyLimit,
+} from "../../../../lib/ai";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -42,6 +46,9 @@ export async function POST(request) {
 
   const apiKey = await getUserApiKey(sb, user.id);
   if (!apiKey) return NextResponse.json({ error: "no_api_key" }, { status: 409 });
+  if (!(await underDailyLimit(sb, user.id))) {
+    return NextResponse.json({ error: "limit_reached" }, { status: 429 });
+  }
 
   const langName = lang === "ru" ? "Russian" : "English";
   const system = `You grade a student's solution to a practice problem in a learning app.
@@ -79,7 +86,7 @@ Time spent: ${timeSec || "?"} seconds. Grade it now, return JSON only.`;
 
   let raw;
   try {
-    raw = await callClaude(apiKey, {
+    raw = await callClaudeLogged(sb, user.id, "practice_grade", apiKey, {
       system,
       prompt: content,
       maxTokens: 2000,

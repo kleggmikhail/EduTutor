@@ -35,6 +35,11 @@ export default function TheoryView({ lang, subjectName, topicName }) {
           setStatus("nokey");
           return;
         }
+        if (res.status === 429) {
+          setErrDetail(t(lang, "limitReached"));
+          setStatus("error");
+          return;
+        }
         if (!res.ok) {
           const j = await res.json().catch(() => ({}));
           setErrDetail([j.error, j.detail].filter(Boolean).join(": "));

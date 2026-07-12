@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { getUserFromRequest } from "../../../../lib/serverSupabase";
-import { getUserApiKey, callClaude } from "../../../../lib/ai";
+import {
+  getUserApiKey,
+  callClaudeLogged,
+  underDailyLimit,
+} from "../../../../lib/ai";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -25,6 +29,9 @@ export async function POST(request) {
 
   const apiKey = await getUserApiKey(sb, user.id);
   if (!apiKey) return NextResponse.json({ error: "no_api_key" }, { status: 409 });
+  if (!(await underDailyLimit(sb, user.id))) {
+    return NextResponse.json({ error: "limit_reached" }, { status: 429 });
+  }
 
   // Антиповторы: последние задания студента по этой теме
   let recent = [];
@@ -59,7 +66,11 @@ ${
 Create the problem now.`;
 
   try {
-    const task = await callClaude(apiKey, { system, prompt, maxTokens: 1500 });
+    const task = await callClaudeLogged(sb, user.id, "practice_task", apiKey, {
+      system,
+      prompt,
+      maxTokens: 1500,
+    });
     return NextResponse.json({ task_md: task.trim() });
   } catch (e) {
     return NextResponse.json(
