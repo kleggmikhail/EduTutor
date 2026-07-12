@@ -6,6 +6,7 @@ import Sidebar from "../components/Sidebar";
 import ApiKeyModal from "../components/ApiKeyModal";
 import NameModal from "../components/NameModal";
 import TheoryView from "../components/TheoryView";
+import PracticeView from "../components/PracticeView";
 import { t } from "../lib/i18n";
 import { supabase } from "../lib/supabaseClient";
 import { algebraSeed } from "../lib/seedAlgebra";
@@ -244,6 +245,14 @@ export default function Home() {
                 lang={lang}
                 subjectName={selectedSubject?.name || ""}
                 topicName={topicPath(selectedTopic)}
+              />
+            ) : selection.section === "practice" ? (
+              <PracticeView
+                key={selectedTopic.id + lang}
+                lang={lang}
+                subjectName={selectedSubject?.name || ""}
+                topicPath={topicPath(selectedTopic)}
+                topicId={selectedTopic.id}
               />
             ) : (
               <p className="opacity-70">{t(lang, "contentSoon")}</p>
