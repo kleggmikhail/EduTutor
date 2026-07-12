@@ -17,6 +17,27 @@ const KATEX_OPTS = {
   throwOnError: false,
 };
 
+// Панель математических символов: {подпись, вставка, смещение курсора}
+const MATH_BUTTONS = [
+  { l: "+", i: "+" },
+  { l: "−", i: "−" },
+  { l: "×", i: "×" },
+  { l: "÷", i: "÷" },
+  { l: "a/b", i: "/" },
+  { l: "=", i: "=" },
+  { l: "√", i: "√()", o: -1 },
+  { l: "x²", i: "²" },
+  { l: "x³", i: "³" },
+  { l: "xⁿ", i: "^" },
+  { l: "π", i: "π" },
+  { l: "±", i: "±" },
+  { l: "≤", i: "≤" },
+  { l: "≥", i: "≥" },
+  { l: "≠", i: "≠" },
+  { l: "( )", i: "()", o: -1 },
+  { l: "|x|", i: "||", o: -1 },
+];
+
 async function authHeaders() {
   const { data } = await supabase.auth.getSession();
   return {
@@ -38,9 +59,25 @@ export default function PracticeView({
   const [image, setImage] = useState(null); // {base64, mediaType, name}
   const [verdict, setVerdict] = useState(null); // {correct, feedback_md, nextDifficulty}
   const [errDetail, setErrDetail] = useState("");
+  const [transcribing, setTranscribing] = useState(false);
   const startRef = useRef(0);
   const boxRef = useRef(null);
   const fileRef = useRef(null);
+  const taRef = useRef(null);
+
+  // Вставка символа в позицию курсора
+  function insertSym(ins, off = 0) {
+    const ta = taRef.current;
+    if (!ta) return;
+    const s = ta.selectionStart ?? solution.length;
+    const e = ta.selectionEnd ?? solution.length;
+    setSolution(solution.slice(0, s) + ins + solution.slice(e));
+    requestAnimationFrame(() => {
+      ta.focus();
+      const pos = s + ins.length + off;
+      ta.setSelectionRange(pos, pos);
+    });
+  }
 
   // Стартовая сложность — продолжить с уровня последней попытки
   useEffect(() => {
@@ -138,15 +175,37 @@ export default function PracticeView({
     const f = e.target.files?.[0];
     if (!f) return;
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const [meta, data] = String(reader.result).split(",");
-      setImage({
+      const img = {
         base64: data,
         mediaType: meta.match(/data:(.*?);/)?.[1] || "image/png",
         name: f.name,
-      });
+      };
+      setImage(img);
+      // Распознать написанное на скрине и перенести в окно решения
+      setTranscribing(true);
+      try {
+        const res = await fetch("/api/practice/transcribe", {
+          method: "POST",
+          headers: await authHeaders(),
+          body: JSON.stringify({
+            imageBase64: img.base64,
+            imageMediaType: img.mediaType,
+            lang,
+          }),
+        });
+        if (res.ok) {
+          const { text } = await res.json();
+          if (text) {
+            setSolution((prev) => (prev.trim() ? prev + "\n" + text : text));
+          }
+        }
+      } catch {}
+      setTranscribing(false);
     };
     reader.readAsDataURL(f);
+    e.target.value = "";
   }
 
   // Формулы
@@ -228,13 +287,32 @@ export default function PracticeView({
       {/* Окно решения */}
       {(phase === "solving" || phase === "checking") && (
         <>
+          {/* Панель математических символов */}
+          <div className="flex flex-wrap gap-1 mb-2">
+            {MATH_BUTTONS.map((b) => (
+              <button
+                key={b.l}
+                type="button"
+                onClick={() => insertSym(b.i, b.o || 0)}
+                className="px-2.5 py-1 rounded-md bg-black/5 hover:bg-black/10 text-sm font-mono"
+              >
+                {b.l}
+              </button>
+            ))}
+          </div>
           <textarea
+            ref={taRef}
             value={solution}
             onChange={(e) => setSolution(e.target.value)}
             placeholder={t(lang, "solutionPh")}
             rows={8}
             className="w-full border border-black/20 rounded-xl px-4 py-3 bg-white mb-2"
           />
+          {transcribing && (
+            <div className="text-sm opacity-70 mb-2 animate-pulse">
+              {t(lang, "transcribing")}
+            </div>
+          )}
           {image && (
             <div className="text-sm opacity-70 mb-2">
               📎 {t(lang, "attached")} {image.name}{" "}
@@ -260,7 +338,11 @@ export default function PracticeView({
             </button>
             <button
               onClick={submit}
-              disabled={phase === "checking" || (!solution.trim() && !image)}
+              disabled={
+                phase === "checking" ||
+                transcribing ||
+                (!solution.trim() && !image)
+              }
               className="px-4 py-2 rounded-lg bg-accent text-white disabled:opacity-50"
             >
               {phase === "checking" ? t(lang, "checking") : t(lang, "submit")}
