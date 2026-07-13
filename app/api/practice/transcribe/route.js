@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserFromRequest } from "../../../../lib/serverSupabase";
-import {
-  getUserApiKey,
-  callClaudeLogged,
-  underDailyLimit,
-} from "../../../../lib/ai";
+import { getUserAI, callAILogged, underDailyLimit } from "../../../../lib/ai";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -20,8 +16,8 @@ export async function POST(request) {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
   }
 
-  const apiKey = await getUserApiKey(sb, user.id);
-  if (!apiKey) return NextResponse.json({ error: "no_api_key" }, { status: 409 });
+  const ai = await getUserAI(sb, user.id);
+  if (!ai) return NextResponse.json({ error: "no_api_key" }, { status: 409 });
   if (!(await underDailyLimit(sb, user.id))) {
     return NextResponse.json({ error: "limit_reached" }, { status: 429 });
   }
@@ -34,7 +30,7 @@ Keep the student's language (likely ${langName}). Preserve the step-by-step stru
 If the image contains no readable solution, output exactly: [empty]`;
 
   try {
-    const text = await callClaudeLogged(sb, user.id, "transcribe", apiKey, {
+    const text = await callAILogged(sb, user.id, "transcribe", ai, {
       system,
       prompt: [
         {

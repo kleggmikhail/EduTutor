@@ -4,8 +4,17 @@ import { useEffect, useState } from "react";
 import { t } from "../lib/i18n";
 import { supabase } from "../lib/supabaseClient";
 
+const PROVIDER_LABELS = {
+  anthropic: "Anthropic (Claude)",
+  openai: "OpenAI (GPT)",
+  google: "Google (Gemini)",
+  glm: "GLM (Zhipu)",
+  deepseek: "DeepSeek",
+};
+
 export default function ApiKeyModal({ lang, onClose }) {
   const [key, setKey] = useState("");
+  const [provider, setProvider] = useState("anthropic");
   const [status, setStatus] = useState("loading"); // loading | set | notset | saving | invalid | error
   const [editing, setEditing] = useState(false);
   const [usage, setUsage] = useState(null); // {calls, inTok, outTok, cost}
@@ -21,6 +30,7 @@ export default function ApiKeyModal({ lang, onClose }) {
         const json = await res.json();
         setStatus(json.hasKey ? "set" : "notset");
         setEditing(!json.hasKey);
+        if (json.provider) setProvider(json.provider);
       } catch {
         setStatus("notset");
         setEditing(true);
@@ -58,7 +68,7 @@ export default function ApiKeyModal({ lang, onClose }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ apiKey: key.trim() }),
+        body: JSON.stringify({ apiKey: key.trim(), provider }),
       });
       if (res.ok) {
         onClose(); // сохранено успешно — окно закрывается само
@@ -92,7 +102,9 @@ export default function ApiKeyModal({ lang, onClose }) {
             <span className="opacity-60">{t(lang, "loading")}</span>
           )}
           {status === "set" && (
-            <span className="text-green-700">✓ {t(lang, "apiKeySet")}</span>
+            <span className="text-green-700">
+              ✓ {t(lang, "apiKeySet")} · {PROVIDER_LABELS[provider]}
+            </span>
           )}
           {status === "notset" && (
             <span className="opacity-60">{t(lang, "apiKeyNotSet")}</span>
@@ -126,6 +138,25 @@ export default function ApiKeyModal({ lang, onClose }) {
         {/* Ввод нового ключа */}
         {showForm && (
           <>
+            <label className="block text-sm opacity-70 mb-1">
+              {t(lang, "providerLbl")}
+            </label>
+            <select
+              value={provider}
+              onChange={(e) => setProvider(e.target.value)}
+              className="w-full border border-black/20 rounded-lg px-3 py-2 mb-3 bg-white"
+            >
+              {Object.entries(PROVIDER_LABELS).map(([id, label]) => (
+                <option key={id} value={id}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            {provider === "deepseek" && (
+              <p className="text-xs text-amber-700 mb-3">
+                {t(lang, "noVisionNote")}
+              </p>
+            )}
             <input
               type="password"
               autoFocus

@@ -3,12 +3,7 @@ import {
   supabaseForToken,
   tokenFromRequest,
 } from "../../../lib/serverSupabase";
-import {
-  getUserApiKey,
-  callClaudeLogged,
-  underDailyLimit,
-  AI_MODEL,
-} from "../../../lib/ai";
+import { getUserAI, callAILogged, underDailyLimit } from "../../../lib/ai";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // генерация может занять до минуты
@@ -74,8 +69,8 @@ export async function POST(request) {
   }
 
   // 2. Ключ пользователя
-  const apiKey = await getUserApiKey(sb, user.id);
-  if (!apiKey) {
+  const ai = await getUserAI(sb, user.id);
+  if (!ai) {
     return NextResponse.json({ error: "no_api_key" }, { status: 409 });
   }
 
@@ -87,7 +82,7 @@ export async function POST(request) {
   const { system, prompt } = buildPrompt(subjectName, topicName, lang);
   let content;
   try {
-    content = await callClaudeLogged(sb, user.id, "theory", apiKey, {
+    content = await callAILogged(sb, user.id, "theory", ai, {
       system,
       prompt,
       maxTokens: 6000,
@@ -106,7 +101,7 @@ export async function POST(request) {
     topic_name: topicName,
     language: lang,
     content_md: content,
-    model: AI_MODEL,
+    model: ai.provider,
     created_by: user.id,
   });
 

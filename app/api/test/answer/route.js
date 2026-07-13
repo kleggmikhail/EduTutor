@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserFromRequest } from "../../../../lib/serverSupabase";
-import {
-  getUserApiKey,
-  callClaudeLogged,
-  underDailyLimit,
-} from "../../../../lib/ai";
+import { getUserAI, callAILogged, underDailyLimit } from "../../../../lib/ai";
 import {
   TEST_LENGTH,
   taskSystem,
@@ -48,8 +44,8 @@ export async function POST(request) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  const apiKey = await getUserApiKey(sb, user.id);
-  if (!apiKey) return NextResponse.json({ error: "no_api_key" }, { status: 409 });
+  const ai = await getUserAI(sb, user.id);
+  if (!ai) return NextResponse.json({ error: "no_api_key" }, { status: 409 });
   if (!(await underDailyLimit(sb, user.id))) {
     return NextResponse.json({ error: "limit_reached" }, { status: 429 });
   }
@@ -64,7 +60,7 @@ export async function POST(request) {
     verdict = { correct: false, note: "skipped by student" };
   } else {
     try {
-      const raw = await callClaudeLogged(sb, user.id, "test_grade", apiKey, {
+      const raw = await callAILogged(sb, user.id, "test_grade", ai, {
         system: gradeSystem(),
         prompt: `Problem:\n${currentTask.task_md}\n\nStudent's solution:\n${solution}\n\nReturn JSON only.`,
         maxTokens: 300,
@@ -92,7 +88,7 @@ export async function POST(request) {
   if (idx + 1 < TEST_LENGTH) {
     let nextTask;
     try {
-      nextTask = await callClaudeLogged(sb, user.id, "test_task", apiKey, {
+      nextTask = await callAILogged(sb, user.id, "test_task", ai, {
         system: taskSystem(langName),
         prompt: taskPrompt({
           subjectName: test.subject_name,
@@ -139,7 +135,7 @@ export async function POST(request) {
 
   let gradeMd;
   try {
-    gradeMd = await callClaudeLogged(sb, user.id, "test_final", apiKey, {
+    gradeMd = await callAILogged(sb, user.id, "test_final", ai, {
       system: finalSystem(langName),
       prompt: `Subject: ${test.subject_name}
 Topic: ${test.topic_path}
