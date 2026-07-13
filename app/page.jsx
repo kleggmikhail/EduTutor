@@ -12,6 +12,7 @@ import ProgressView from "../components/ProgressView";
 import ThemeModal from "../components/ThemeModal";
 import ParentLinkModal from "../components/ParentLinkModal";
 import ChildrenView from "../components/ChildrenView";
+import ProfileModal from "../components/ProfileModal";
 import {
   applyThemePref,
   loadThemePref,
@@ -29,6 +30,7 @@ export default function Home() {
   const [showTheme, setShowTheme] = useState(false);
   const [showParent, setShowParent] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [toast, setToast] = useState("");
 
   const [sidebarWidth, setSidebarWidth] = useState(288);
@@ -254,6 +256,7 @@ export default function Home() {
         onOpenApiKey={() => setShowApiKey(true)}
         onOpenTheme={() => setShowTheme(true)}
         onOpenParent={() => setShowParent(true)}
+        onOpenProfile={() => setShowProfile(true)}
         onLogout={logout}
         onComingSoon={comingSoon}
         onNewSubject={() => setModal({ type: "subject" })}
@@ -346,6 +349,14 @@ export default function Home() {
 
       {showTheme && (
         <ThemeModal lang={lang} onClose={() => setShowTheme(false)} />
+      )}
+
+      {showProfile && (
+        <ProfileModal
+          lang={lang}
+          session={session}
+          onClose={() => setShowProfile(false)}
+        />
       )}
 
       {showParent && (

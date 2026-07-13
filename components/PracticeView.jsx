@@ -6,6 +6,7 @@ import "katex/dist/katex.min.css";
 import { t } from "../lib/i18n";
 import { supabase } from "../lib/supabaseClient";
 import MathToolbar from "./MathToolbar";
+import AskChat from "./AskChat";
 
 async function authHeaders() {
   const { data } = await supabase.auth.getSession();
@@ -315,6 +316,22 @@ export default function PracticeView({
             {t(lang, "next")}
           </button>
         </div>
+      )}
+
+      {/* Диалог-вопрос по заданию */}
+      {task && (
+        <AskChat
+          lang={lang}
+          subjectName={subjectName}
+          topicName={topicPath}
+          contextText={`Current practice problem:\n${task}\n\nStudent's current solution draft:\n${
+            solution || "(empty)"
+          }${
+            verdict
+              ? `\n\nGrading feedback already given:\n${verdict.feedback_md}`
+              : ""
+          }`}
+        />
       )}
     </div>
   );

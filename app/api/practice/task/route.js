@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { LANGUAGE_NAMES } from "../../../../lib/i18n";
 import { getUserFromRequest } from "../../../../lib/serverSupabase";
-import { getUserAI, callAILogged, underDailyLimit } from "../../../../lib/ai";
+import {
+  getUserAI,
+  callAILogged,
+  underDailyLimit,
+  ageNote,
+} from "../../../../lib/ai";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -88,7 +93,7 @@ ${
         .join("\n")}`
     : ""
 }
-Create the problem now.`;
+Create the problem now.${ageNote(ai)}`;
 
   try {
     const task = await callAILogged(sb, user.id, "practice_task", ai, {

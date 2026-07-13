@@ -69,6 +69,7 @@ export async function POST(request) {
         topicPath,
         difficulty: DIFFICULTY_SCHEDULE[0],
         previous: [],
+        age: ai.age,
       }),
       maxTokens: 1200,
     });

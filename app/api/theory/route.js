@@ -4,7 +4,12 @@ import {
   supabaseForToken,
   tokenFromRequest,
 } from "../../../lib/serverSupabase";
-import { getUserAI, callAILogged, underDailyLimit } from "../../../lib/ai";
+import {
+  getUserAI,
+  callAILogged,
+  underDailyLimit,
+  ageNote,
+} from "../../../lib/ai";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // генерация может занять до минуты
@@ -26,7 +31,7 @@ function cacheKey(subjectName, topicName, lang) {
   ].join("|");
 }
 
-function buildPrompt(subjectName, topicName, lang) {
+function buildPrompt(subjectName, topicName, lang, ai) {
   const langName = LANGUAGE_NAMES[lang] || "English";
   const system = `You are an expert teacher writing theory pages for a self-study learning app used by school students.
 Write entirely in ${langName}.
@@ -42,7 +47,7 @@ Structure strictly:
   const prompt = `Subject: ${subjectName}
 Topic: ${topicName}
 
-Write the complete theory page for this topic.`;
+Write the complete theory page for this topic.${ageNote(ai)}`;
   return { system, prompt };
 }
 
@@ -80,7 +85,7 @@ export async function POST(request) {
   }
 
   // 3. Генерация
-  const { system, prompt } = buildPrompt(subjectName, topicName, lang);
+  const { system, prompt } = buildPrompt(subjectName, topicName, lang, ai);
   let content;
   try {
     content = await callAILogged(sb, user.id, "theory", ai, {

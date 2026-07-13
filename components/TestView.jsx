@@ -24,6 +24,9 @@ export default function TestView({ lang, subjectName, topicPath, topicId }) {
   const [task, setTask] = useState("");
   const [solution, setSolution] = useState("");
   const [result, setResult] = useState(null); // {score, total, grade_md}
+  const [review, setReview] = useState(null); // {tasks, answers, difficulties}
+  const [expl, setExpl] = useState({}); // index → текст разбора
+  const [explLoading, setExplLoading] = useState(null);
   const [errDetail, setErrDetail] = useState("");
   const [elapsed, setElapsed] = useState(0);
   const [usedSec, setUsedSec] = useState(0); // время прошлых сессий теста
@@ -35,6 +38,54 @@ export default function TestView({ lang, subjectName, topicPath, topicId }) {
   const finishingRef = useRef(false);
 
   const remaining = Math.max(0, TEST_TIME_LIMIT_SEC - usedSec - elapsed);
+
+  // Предупреждение при закрытии вкладки во время теста
+  useEffect(() => {
+    if (phase !== "solving" && phase !== "checking") return;
+    const h = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", h);
+    return () => window.removeEventListener("beforeunload", h);
+  }, [phase]);
+
+  // После завершения — загрузить задания и ответы для разбора
+  useEffect(() => {
+    if (phase !== "done" || !testId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("tests")
+        .select("tasks, answers, difficulties")
+        .eq("id", testId)
+        .maybeSingle();
+      if (data) {
+        setReview(data);
+        const saved = {};
+        (data.answers || []).forEach((a, i) => {
+          if (a.explanation) saved[i] = a.explanation;
+        });
+        setExpl(saved);
+      }
+    })();
+  }, [phase, testId]);
+
+  async function loadExplanation(i) {
+    if (expl[i] || explLoading !== null) return;
+    setExplLoading(i);
+    try {
+      const res = await fetch("/api/test/review", {
+        method: "POST",
+        headers: await authHeaders(),
+        body: JSON.stringify({ testId, index: i }),
+      });
+      if (res.ok) {
+        const j = await res.json();
+        setExpl((e) => ({ ...e, [i]: j.explanation }));
+      }
+    } catch {}
+    setExplLoading(null);
+  }
 
   // Секундомер
   useEffect(() => {
@@ -216,6 +267,70 @@ export default function TestView({ lang, subjectName, topicPath, topicId }) {
             __html: mdWithMath(result.grade_md || ""),
           }}
         />
+
+        {/* Разбор заданий */}
+        {review && (
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold mb-3">
+              {t(lang, "testReview")}
+            </h2>
+            <div className="space-y-2">
+              {review.tasks.map((task, i) => {
+                const a = review.answers[i] || {};
+                return (
+                  <details
+                    key={i}
+                    className="bg-white rounded-xl border border-black/10 px-4 py-2"
+                  >
+                    <summary className="cursor-pointer py-1 select-none">
+                      <span className={a.correct ? "text-green-700" : "text-red-700"}>
+                        {a.correct ? "✓" : "✗"}
+                      </span>{" "}
+                      {t(lang, "questionOf")} {i + 1} ·{" "}
+                      {review.difficulties[i]}/10
+                    </summary>
+                    <div
+                      className="theory-content mt-2"
+                      dangerouslySetInnerHTML={{
+                        __html: mdWithMath(task.task_md),
+                      }}
+                    />
+                    <div className="mt-3 text-sm">
+                      <span className="opacity-60">
+                        {t(lang, "yourAnswer")}:
+                      </span>{" "}
+                      <span className="whitespace-pre-wrap">
+                        {a.solution || "—"}
+                      </span>
+                      {a.note && (
+                        <div className="opacity-60 mt-1">{a.note}</div>
+                      )}
+                    </div>
+                    {expl[i] ? (
+                      <div
+                        className="theory-content mt-3 bg-green-50 border border-green-300 rounded-xl p-3"
+                        dangerouslySetInnerHTML={{
+                          __html: mdWithMath(expl[i]),
+                        }}
+                      />
+                    ) : (
+                      <button
+                        onClick={() => loadExplanation(i)}
+                        disabled={explLoading !== null}
+                        className="mt-3 mb-2 text-sm px-3 py-1.5 rounded-lg bg-black/5 hover:bg-black/10 disabled:opacity-50"
+                      >
+                        {explLoading === i
+                          ? t(lang, "checking")
+                          : t(lang, "showSolution")}
+                      </button>
+                    )}
+                  </details>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <button
           onClick={start}
           className="px-4 py-2 rounded-lg bg-accent text-white"
@@ -239,6 +354,14 @@ export default function TestView({ lang, subjectName, topicPath, topicId }) {
         >
           ⏱ {mmss}
         </span>
+      </div>
+
+      {/* Прогресс-бар */}
+      <div className="h-1.5 bg-black/10 rounded-full mb-4 overflow-hidden">
+        <div
+          className="h-full bg-accent rounded-full transition-all duration-500"
+          style={{ width: `${(index / total) * 100}%` }}
+        />
       </div>
 
       <div

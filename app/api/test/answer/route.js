@@ -111,6 +111,7 @@ export async function POST(request) {
           topicPath: test.topic_path,
           difficulty: test.difficulties[idx + 1],
           previous: test.tasks.map((t) => t.task_md),
+          age: ai.age,
         }),
         maxTokens: 1200,
       });

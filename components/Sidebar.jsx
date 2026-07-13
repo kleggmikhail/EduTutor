@@ -18,6 +18,7 @@ export default function Sidebar({
   onOpenApiKey,
   onOpenTheme,
   onOpenParent,
+  onOpenProfile,
   onLogout,
   onComingSoon,
   onNewSubject,
@@ -112,6 +113,9 @@ export default function Sidebar({
       <nav className="px-2 space-y-1">
         <button className={item} onClick={onLogout} title={userEmail}>
           🚪 {t(lang, "logout")} · {userEmail}
+        </button>
+        <button className={item} onClick={onOpenProfile}>
+          👤 {t(lang, "profile")}
         </button>
         <button className={item} onClick={onOpenTheme}>
           🎨 {t(lang, "theme")}
