@@ -22,6 +22,15 @@ export default function AskChat({ lang, subjectName, topicName, contextText }) {
   const [recording, setRecording] = useState(false);
   const recRef = useRef(null);
   const chatEndRef = useRef(null);
+  const taRef = useRef(null);
+
+  // Автоувеличение высоты поля при наборе (как в Claude)
+  function autoGrow() {
+    const ta = taRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = Math.min(ta.scrollHeight, 200) + "px";
+  }
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -132,11 +141,15 @@ export default function AskChat({ lang, subjectName, topicName, contextText }) {
 
       {/* Парящая строка вопроса */}
       <div className="sticky bottom-2 mt-6 z-10">
-        <div className="flex items-end gap-1.5 bg-white border border-black/15 rounded-2xl shadow-lg px-3 py-2">
+        <div className="flex items-end gap-1.5 bg-white border border-black/15 rounded-2xl shadow-lg px-4 py-3">
           <textarea
-            rows={1}
+            ref={taRef}
+            rows={2}
             value={question}
-            onChange={(e) => setQuestion(e.target.value)}
+            onChange={(e) => {
+              setQuestion(e.target.value);
+              autoGrow();
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -144,8 +157,13 @@ export default function AskChat({ lang, subjectName, topicName, contextText }) {
               }
             }}
             placeholder={t(lang, "askPlaceholder")}
-            className="flex-1 resize-none bg-transparent px-1 py-1.5 max-h-32"
-            style={{ boxShadow: "none", outline: "none" }}
+            className="flex-1 resize-none bg-transparent px-1 py-1.5"
+            style={{
+              boxShadow: "none",
+              outline: "none",
+              minHeight: "56px",
+              maxHeight: "200px",
+            }}
           />
           <button
             type="button"
