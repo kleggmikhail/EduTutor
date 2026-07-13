@@ -22,15 +22,16 @@ function extractJson(text) {
   }
 }
 
-// POST { testId, solution, timeSec }
+// POST { testId, solution, timeSec, skip, finish }
+// finish=true → время вышло: оставшиеся задания = нерешённые, сразу оценка
 // → { done:false, index, total, task_md }  или  { done:true, score, total, grade_md }
 export async function POST(request) {
   const { sb, user, error } = await getUserFromRequest(request);
   if (error) return NextResponse.json({ error }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));
-  const { testId, solution, timeSec, skip } = body;
-  if (!testId || (!solution && !skip)) {
+  const { testId, solution, timeSec, skip, finish } = body;
+  if (!testId || (!solution && !skip && !finish)) {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
   }
 
@@ -53,6 +54,20 @@ export async function POST(request) {
   const idx = test.current_index;
   const currentTask = test.tasks[idx];
   const langName = test.language === "ru" ? "Russian" : "English";
+
+  // 0. Время вышло: добить оставшиеся как нерешённые и сразу к оценке
+  if (finish) {
+    const answers = [...test.answers];
+    while (answers.length < TEST_LENGTH) {
+      answers.push({
+        solution: "",
+        correct: false,
+        note: "not answered — time ran out",
+        time_sec: null,
+      });
+    }
+    return finalize(sb, user, ai, test, answers, langName);
+  }
 
   // 1. Проверить ответ (пропуск = нерешённое, без обращения к ИИ)
   let verdict = { correct: false, note: "" };
@@ -123,6 +138,11 @@ export async function POST(request) {
   }
 
   // 2б. Тест завершён — итоговая оценка
+  return finalize(sb, user, ai, test, answers, langName);
+}
+
+// Итоговая оценка и закрытие теста
+async function finalize(sb, user, ai, test, answers, langName) {
   const score = answers.filter((a) => a.correct).length;
   const summary = answers
     .map(
@@ -154,13 +174,13 @@ Write the final evaluation.`,
     .from("tests")
     .update({
       answers,
-      current_index: idx + 1,
+      current_index: TEST_LENGTH,
       status: "completed",
       score,
       grade_md: gradeMd,
       finished_at: new Date().toISOString(),
     })
-    .eq("id", testId);
+    .eq("id", test.id);
 
   return NextResponse.json({
     done: true,

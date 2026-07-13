@@ -44,6 +44,46 @@ textarea:focus {
   background-color: rgb(var(--accent) / 0.25);
 }
 
+button:active {
+  transform: scale(0.98);
+}
+
+/* Анимации появления */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+main > * {
+  animation: fadeIn 0.25s ease;
+}
+
+.animate-pop {
+  animation: pop 0.18s ease;
+}
+
+/* Таблицы прогресса не ломают мобильную вёрстку */
+.progress-table {
+  overflow-x: auto;
+}
+
 /* Тёмная гамма: переопределение светлых утилит */
 [data-theme="dark"] .bg-white { background-color: #30302c; }
 [data-theme="dark"] .border-black\/10 { border-color: rgba(255, 255, 255, 0.12); }

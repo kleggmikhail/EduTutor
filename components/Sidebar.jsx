@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { t } from "../lib/i18n";
 
 const SECTIONS = ["theory", "practice", "test"];
+const SECTION_ICONS = { theory: "📖", practice: "✏️", test: "📝" };
 
 export default function Sidebar({
   lang,
   width,
+  mobileOpen,
   userEmail,
   subjects,
   topics,
@@ -87,7 +89,7 @@ export default function Sidebar({
                   style={{ paddingLeft: 26 + depth * 14 }}
                   onClick={() => onSelect({ topicId: topic.id, section: s })}
                 >
-                  {t(lang, s)}
+                  {SECTION_ICONS[s]} {t(lang, s)}
                 </button>
               );
             })}
@@ -100,26 +102,29 @@ export default function Sidebar({
   return (
     <aside
       style={{ width: width || 288 }}
-      className="shrink-0 h-screen bg-sidebar border-r border-black/10 flex flex-col"
+      className={`shrink-0 h-screen bg-sidebar border-r border-black/10 flex flex-col
+        fixed inset-y-0 left-0 z-40 transition-transform duration-200
+        ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
+        md:static md:translate-x-0 md:transition-none`}
     >
       <div className="px-4 py-4 font-semibold text-lg">{t(lang, "appName")}</div>
 
       {/* Верхняя часть: меню */}
       <nav className="px-2 space-y-1">
         <button className={item} onClick={onLogout} title={userEmail}>
-          {t(lang, "logout")} · {userEmail}
+          🚪 {t(lang, "logout")} · {userEmail}
         </button>
         <button className={item} onClick={onToggleLang}>
-          {t(lang, "language")}: {lang.toUpperCase()}
+          🌐 {t(lang, "language")}: {lang.toUpperCase()}
         </button>
         <button className={item} onClick={onOpenTheme}>
-          {t(lang, "theme")}
+          🎨 {t(lang, "theme")}
         </button>
         <button className={item} onClick={onOpenApiKey}>
-          {t(lang, "apiKey")}
+          🔑 {t(lang, "apiKey")}
         </button>
         <button className={item} onClick={onNewSubject}>
-          {t(lang, "newSubject")}
+          ➕ {t(lang, "newSubject")}
         </button>
         <button
           className={`${item} ${
@@ -127,7 +132,7 @@ export default function Sidebar({
           }`}
           onClick={() => onSelect({ section: "progress" })}
         >
-          {t(lang, "progress")}
+          📊 {t(lang, "progress")}
         </button>
         <button
           className={`${item} ${
@@ -135,10 +140,10 @@ export default function Sidebar({
           }`}
           onClick={() => onSelect({ section: "children" })}
         >
-          {t(lang, "children")}
+          👨‍👩‍👦 {t(lang, "children")}
         </button>
         <button className={item} onClick={onOpenParent}>
-          {t(lang, "parentShare")}
+          🔗 {t(lang, "parentShare")}
         </button>
       </nav>
 

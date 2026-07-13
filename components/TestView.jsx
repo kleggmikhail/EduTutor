@@ -6,6 +6,7 @@ import "katex/dist/katex.min.css";
 import { t } from "../lib/i18n";
 import { supabase } from "../lib/supabaseClient";
 import MathToolbar from "./MathToolbar";
+import { TEST_TIME_LIMIT_SEC } from "../lib/testPrompts";
 
 async function authHeaders() {
   const { data } = await supabase.auth.getSession();
@@ -25,10 +26,15 @@ export default function TestView({ lang, subjectName, topicPath, topicId }) {
   const [result, setResult] = useState(null); // {score, total, grade_md}
   const [errDetail, setErrDetail] = useState("");
   const [elapsed, setElapsed] = useState(0);
+  const [usedSec, setUsedSec] = useState(0); // время прошлых сессий теста
+  const [timedOut, setTimedOut] = useState(false);
   const startRef = useRef(0);
   const qStartRef = useRef(0);
   const boxRef = useRef(null);
   const taRef = useRef(null);
+  const finishingRef = useRef(false);
+
+  const remaining = Math.max(0, TEST_TIME_LIMIT_SEC - usedSec - elapsed);
 
   // Секундомер
   useEffect(() => {
@@ -39,6 +45,34 @@ export default function TestView({ lang, subjectName, topicPath, topicId }) {
     );
     return () => clearInterval(id);
   }, [phase]);
+
+  // Время вышло — завершить тест автоматически
+  useEffect(() => {
+    if (remaining > 0 || phase !== "solving" || finishingRef.current) return;
+    finishingRef.current = true;
+    (async () => {
+      setTimedOut(true);
+      setPhase("checking");
+      try {
+        const res = await fetch("/api/test/answer", {
+          method: "POST",
+          headers: await authHeaders(),
+          body: JSON.stringify({ testId, finish: true }),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          setResult(json);
+          setPhase("done");
+        } else {
+          setPhase("error");
+        }
+      } catch {
+        setPhase("error");
+      }
+      finishingRef.current = false;
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remaining, phase, testId]);
 
   async function start() {
     setPhase("starting");
@@ -64,6 +98,9 @@ export default function TestView({ lang, subjectName, topicPath, topicId }) {
       setTotal(json.total);
       setTask(json.task_md);
       setSolution("");
+      setUsedSec(json.usedSec || 0);
+      setElapsed(0);
+      setTimedOut(false);
       startRef.current = Date.now();
       qStartRef.current = Date.now();
       setPhase("solving");
@@ -112,8 +149,8 @@ export default function TestView({ lang, subjectName, topicPath, topicId }) {
     }
   }
 
-  const mmss = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(
-    elapsed % 60
+  const mmss = `${String(Math.floor(remaining / 60)).padStart(2, "0")}:${String(
+    remaining % 60
   ).padStart(2, "0")}`;
 
   if (phase === "intro") {
@@ -165,6 +202,11 @@ export default function TestView({ lang, subjectName, topicPath, topicId }) {
   if (phase === "done" && result) {
     return (
       <div ref={boxRef}>
+        {timedOut && (
+          <div className="mb-3 px-4 py-2 rounded-lg bg-red-50 border border-red-300 text-sm">
+            {t(lang, "timeOver")}
+          </div>
+        )}
         <div className="text-3xl font-semibold mb-4">
           {t(lang, "score")}: {result.score}/{result.total}
         </div>
@@ -186,11 +228,17 @@ export default function TestView({ lang, subjectName, topicPath, topicId }) {
 
   return (
     <div ref={boxRef}>
-      <div className="flex justify-between text-sm opacity-60 mb-3">
-        <span>
+      <div className="flex justify-between text-sm mb-3">
+        <span className="opacity-60">
           {t(lang, "questionOf")} {index + 1}/{total}
         </span>
-        <span>⏱ {mmss}</span>
+        <span
+          className={
+            remaining < 300 ? "text-red-700 font-semibold" : "opacity-60"
+          }
+        >
+          ⏱ {mmss}
+        </span>
       </div>
 
       <div

@@ -28,6 +28,7 @@ export default function Home() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [showTheme, setShowTheme] = useState(false);
   const [showParent, setShowParent] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [toast, setToast] = useState("");
 
   const [sidebarWidth, setSidebarWidth] = useState(288);
@@ -232,14 +233,35 @@ export default function Home() {
 
   return (
     <div className="flex h-screen">
+      {/* Кнопка меню (мобильные) */}
+      <button
+        onClick={() => setMobileOpen((v) => !v)}
+        className="md:hidden fixed top-3 left-3 z-50 w-10 h-10 rounded-lg bg-sidebar border border-black/10 shadow-sm text-lg"
+        aria-label="menu"
+      >
+        {mobileOpen ? "✕" : "☰"}
+      </button>
+
+      {/* Затемнение под выдвинутой панелью */}
+      {mobileOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/40 z-30"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
       <Sidebar
         lang={lang}
         width={sidebarWidth}
+        mobileOpen={mobileOpen}
         userEmail={session.user.email}
         subjects={subjects}
         topics={topics}
         selection={selection}
-        onSelect={setSelection}
+        onSelect={(sel) => {
+          setSelection(sel);
+          setMobileOpen(false);
+        }}
         onToggleLang={toggleLang}
         onOpenApiKey={() => setShowApiKey(true)}
         onOpenTheme={() => setShowTheme(true)}
@@ -255,15 +277,15 @@ export default function Home() {
         onSeed={seedAlgebra}
       />
 
-      {/* Перетаскиваемая граница панели */}
+      {/* Перетаскиваемая граница панели (только компьютер) */}
       <div
         onMouseDown={startResize}
-        className="w-1 shrink-0 cursor-col-resize hover:bg-accent/40 active:bg-accent/60"
+        className="hidden md:block w-1 shrink-0 cursor-col-resize hover:bg-accent/40 active:bg-accent/60"
         title="⟷"
       />
 
       {/* Правая рабочая область */}
-      <main className="flex-1 overflow-y-auto p-8">
+      <main className="flex-1 overflow-y-auto p-4 pt-16 md:p-8">
         {selection?.section === "progress" ? (
           <div className="max-w-3xl mx-auto">
             <h1 className="text-2xl font-semibold mb-6">

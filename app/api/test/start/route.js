@@ -26,7 +26,7 @@ export async function POST(request) {
   // Есть ли незавершённый тест по теме — продолжить
   const { data: existing } = await sb
     .from("tests")
-    .select("id, current_index, tasks")
+    .select("id, current_index, tasks, answers")
     .eq("user_id", user.id)
     .eq("topic_path", topicPath)
     .eq("language", lang)
@@ -36,11 +36,17 @@ export async function POST(request) {
     .maybeSingle();
 
   if (existing && existing.tasks.length > existing.current_index) {
+    // Уже израсходованное время (для лимита 45 мин при продолжении)
+    const usedSec = (existing.answers || []).reduce(
+      (s, a) => s + (a.time_sec || 0),
+      0
+    );
     return NextResponse.json({
       testId: existing.id,
       index: existing.current_index,
       total: TEST_LENGTH,
       task_md: existing.tasks[existing.current_index].task_md,
+      usedSec,
       resumed: true,
     });
   }
@@ -95,6 +101,7 @@ export async function POST(request) {
     index: 0,
     total: TEST_LENGTH,
     task_md: task.trim(),
+    usedSec: 0,
     resumed: false,
   });
 }

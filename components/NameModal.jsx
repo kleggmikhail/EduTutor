@@ -18,7 +18,7 @@ export default function NameModal({ lang, placeholderKey, onCreate, onClose }) {
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <form
         onSubmit={submit}
-        className="bg-surface rounded-2xl shadow-xl w-full max-w-sm p-6"
+        className="bg-surface rounded-2xl shadow-xl w-full max-w-sm p-6 animate-pop"
       >
         <input
           autoFocus

@@ -26,7 +26,7 @@ export default function ThemeModal({ lang, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-sm p-6">
+      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-sm p-6 animate-pop">
         <h2 className="text-lg font-semibold mb-4">{t(lang, "theme")}</h2>
 
         <div className="space-y-2 mb-4">

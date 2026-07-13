@@ -247,7 +247,7 @@ export default function ProgressView({ lang, userId, onSelectTopic }) {
         return (
           <div key={subj.id} className="mb-8">
             <h2 className="text-lg font-semibold mb-3">{subj.name}</h2>
-            <div className="bg-white rounded-xl border border-black/10 overflow-hidden">
+            <div className="bg-white rounded-xl border border-black/10 overflow-hidden progress-table">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left opacity-60 border-b border-black/10">

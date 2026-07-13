@@ -12,6 +12,14 @@ const DIFFICULTY_GUIDE = `Difficulty scale 1-10:
 7-8 = advanced / competition-flavored high school,
 9-10 = university level.`;
 
+function bankKey(subjectName, topicPath, lang) {
+  return [
+    subjectName.trim().toLowerCase(),
+    topicPath.trim().toLowerCase(),
+    lang,
+  ].join("|");
+}
+
 // POST { subjectName, topicPath, topicId, lang, difficulty } → { task_md }
 export async function POST(request) {
   const { sb, user, error } = await getUserFromRequest(request);
@@ -25,12 +33,9 @@ export async function POST(request) {
 
   const ai = await getUserAI(sb, user.id);
   if (!ai) return NextResponse.json({ error: "no_api_key" }, { status: 409 });
-  if (!(await underDailyLimit(sb, user.id))) {
-    return NextResponse.json({ error: "limit_reached" }, { status: 429 });
-  }
 
-  // Антиповторы: последние задания студента по этой теме
-  let recent = [];
+  // Что студент уже видел по этой теме (антиповторы + фильтр банка)
+  let seen = [];
   if (topicId) {
     const { data } = await sb
       .from("practice_attempts")
@@ -38,10 +43,33 @@ export async function POST(request) {
       .eq("user_id", user.id)
       .eq("topic_id", topicId)
       .order("created_at", { ascending: false })
-      .limit(8);
-    recent = (data || []).map((r) => r.task_md.slice(0, 200));
+      .limit(100);
+    seen = (data || []).map((r) => r.task_md);
   }
 
+  // 1. Банк задач: если есть задание этой темы/сложности, которое студент
+  //    ещё не видел — отдать его бесплатно, без обращения к ИИ
+  const key = bankKey(subjectName, topicPath, lang);
+  const { data: bank } = await sb
+    .from("task_bank")
+    .select("task_md")
+    .eq("cache_key", key)
+    .eq("difficulty", Number(difficulty))
+    .limit(30);
+
+  const seenSet = new Set(seen);
+  const unseen = (bank || []).filter((b) => !seenSet.has(b.task_md));
+  if (unseen.length) {
+    const pick = unseen[Math.floor(Math.random() * unseen.length)];
+    return NextResponse.json({ task_md: pick.task_md, fromBank: true });
+  }
+
+  // 2. Банк пуст — генерируем через ИИ (с учётом дневного лимита)
+  if (!(await underDailyLimit(sb, user.id))) {
+    return NextResponse.json({ error: "limit_reached" }, { status: 429 });
+  }
+
+  const recent = seen.slice(0, 8).map((s) => s.slice(0, 200));
   const langName = lang === "ru" ? "Russian" : "English";
   const system = `You create ONE practice problem for a self-study learning app.
 Write entirely in ${langName}. Output pure Markdown of the problem statement ONLY — no solution, no answer, no hints, no preamble.
@@ -67,7 +95,17 @@ Create the problem now.`;
       prompt,
       maxTokens: 1500,
     });
-    return NextResponse.json({ task_md: task.trim() });
+    const taskMd = task.trim();
+
+    // Пополнить общий банк для будущих студентов
+    await sb.from("task_bank").insert({
+      cache_key: key,
+      difficulty: Number(difficulty),
+      task_md: taskMd,
+      created_by: user.id,
+    });
+
+    return NextResponse.json({ task_md: taskMd, fromBank: false });
   } catch (e) {
     return NextResponse.json(
       { error: "ai_failed", detail: String(e.message).slice(0, 200) },

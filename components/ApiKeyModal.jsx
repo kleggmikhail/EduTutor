@@ -86,7 +86,7 @@ export default function ApiKeyModal({ lang, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md p-6">
+      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md p-6 animate-pop">
         <h2 className="text-lg font-semibold mb-2">{t(lang, "apiKeyTitle")}</h2>
         <p className="text-sm opacity-70 mb-3">{t(lang, "apiKeyHint")}</p>
 
