@@ -9,6 +9,17 @@ const manrope = Manrope({
 export const metadata = {
   title: "EduTutor",
   description: "AI-powered learning app",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/icon-192.png",
+  },
+};
+
+export const viewport = {
+  themeColor: "#c96442",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }) {
