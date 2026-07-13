@@ -15,7 +15,6 @@ export default function Sidebar({
   topics,
   selection,
   onSelect,
-  onToggleLang,
   onOpenApiKey,
   onOpenTheme,
   onOpenParent,
@@ -113,9 +112,6 @@ export default function Sidebar({
       <nav className="px-2 space-y-1">
         <button className={item} onClick={onLogout} title={userEmail}>
           🚪 {t(lang, "logout")} · {userEmail}
-        </button>
-        <button className={item} onClick={onToggleLang}>
-          🌐 {t(lang, "language")}: {lang.toUpperCase()}
         </button>
         <button className={item} onClick={onOpenTheme}>
           🎨 {t(lang, "theme")}

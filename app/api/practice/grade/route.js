@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { LANGUAGE_NAMES } from "../../../../lib/i18n";
 import { getUserFromRequest } from "../../../../lib/serverSupabase";
 import { getUserAI, callAILogged, underDailyLimit } from "../../../../lib/ai";
 
@@ -46,7 +47,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "limit_reached" }, { status: 429 });
   }
 
-  const langName = lang === "ru" ? "Russian" : "English";
+  const langName = LANGUAGE_NAMES[lang] || "English";
   const system = `You grade a student's solution to a practice problem in a learning app.
 The student MUST show the solution steps (the chain of work: transformations, calculations).
 A verbal explanation of WHY each step is done is welcome but NOT required — never penalize its absence.

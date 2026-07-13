@@ -84,17 +84,6 @@ export default function Home() {
     loadTree();
   }, [loadTree]);
 
-  async function toggleLang() {
-    const next = lang === "ru" ? "en" : "ru";
-    setLang(next);
-    localStorage.setItem("edututor_lang", next);
-    if (session?.user) {
-      await supabase
-        .from("user_settings")
-        .upsert({ user_id: session.user.id, language: next });
-    }
-  }
-
   async function logout() {
     await supabase.auth.signOut();
     router.replace("/login");
@@ -140,7 +129,7 @@ export default function Home() {
 
   // Загрузка стартового предмета «Алгебра» из документа
   async function seedAlgebra() {
-    const seed = algebraSeed[lang] || algebraSeed.ru;
+    const seed = algebraSeed[lang] || algebraSeed.en;
     const { data: subj, error } = await supabase
       .from("subjects")
       .insert({ user_id: session.user.id, name: seed.subject })
@@ -262,7 +251,6 @@ export default function Home() {
           setSelection(sel);
           setMobileOpen(false);
         }}
-        onToggleLang={toggleLang}
         onOpenApiKey={() => setShowApiKey(true)}
         onOpenTheme={() => setShowTheme(true)}
         onOpenParent={() => setShowParent(true)}

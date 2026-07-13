@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { LANGUAGE_NAMES } from "../../../../lib/i18n";
 import { getUserFromRequest } from "../../../../lib/serverSupabase";
 import { getUserAI, callAILogged, underDailyLimit } from "../../../../lib/ai";
 
@@ -22,7 +23,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "limit_reached" }, { status: 429 });
   }
 
-  const langName = lang === "ru" ? "Russian" : "English";
+  const langName = LANGUAGE_NAMES[lang] || "English";
   const system = `You transcribe a student's handwritten or typed solution from an image into plain text.
 Output ONLY the transcription, nothing else — no comments, no grading, no corrections (keep the student's mistakes as written).
 Use simple math notation: ^ for powers, √() for roots, × ÷ for multiplication/division, a/b for fractions.

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { t } from "../../lib/i18n";
+import { t, LANGS } from "../../lib/i18n";
 import { supabase } from "../../lib/supabaseClient";
 import { applyThemePref, loadThemePref } from "../../lib/theme";
 
@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("edututor_lang");
@@ -46,23 +47,44 @@ export default function LoginPage() {
     }
   }
 
-  function toggleLang() {
-    const next = lang === "ru" ? "en" : "ru";
-    setLang(next);
-    localStorage.setItem("edututor_lang", next);
+  function pickLang(code) {
+    setLang(code);
+    localStorage.setItem("edututor_lang", code);
+    setLangOpen(false);
   }
+
+  const current = LANGS.find((l) => l.code === lang) || LANGS[0];
 
   return (
     <div className="h-screen flex items-center justify-center">
+      {/* Выбор языка — правый верхний угол */}
+      <div className="fixed top-4 right-4 z-20">
+        <button
+          onClick={() => setLangOpen((v) => !v)}
+          className="text-sm px-3 py-1.5 rounded-lg bg-black/5 hover:bg-black/10"
+        >
+          {current.flag} {lang.toUpperCase()} ▾
+        </button>
+        {langOpen && (
+          <div className="absolute right-0 mt-1 w-44 bg-white border border-black/10 rounded-xl shadow-lg py-1 animate-pop">
+            {LANGS.map((l) => (
+              <button
+                key={l.code}
+                onClick={() => pickLang(l.code)}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-black/5 ${
+                  lang === l.code ? "font-semibold" : ""
+                }`}
+              >
+                {l.flag} {l.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="w-full max-w-sm p-8">
-        <div className="flex justify-between items-center mb-6">
+        <div className="mb-6">
           <h1 className="text-2xl font-semibold">{t(lang, "appName")}</h1>
-          <button
-            onClick={toggleLang}
-            className="text-sm px-3 py-1 rounded-lg hover:bg-black/5"
-          >
-            {lang.toUpperCase()}
-          </button>
         </div>
 
         <div className="flex gap-2 mb-4">

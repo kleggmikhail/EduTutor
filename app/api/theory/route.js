@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { LANGUAGE_NAMES } from "../../../lib/i18n";
 import {
   supabaseForToken,
   tokenFromRequest,
@@ -26,7 +27,7 @@ function cacheKey(subjectName, topicName, lang) {
 }
 
 function buildPrompt(subjectName, topicName, lang) {
-  const langName = lang === "ru" ? "Russian" : "English";
+  const langName = LANGUAGE_NAMES[lang] || "English";
   const system = `You are an expert teacher writing theory pages for a self-study learning app used by school students.
 Write entirely in ${langName}.
 Output pure Markdown only — no code fence around the document, no preamble.

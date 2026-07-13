@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { LANGUAGE_NAMES } from "../../../../lib/i18n";
 import { getUserFromRequest } from "../../../../lib/serverSupabase";
 import { getUserAI, callAILogged, underDailyLimit } from "../../../../lib/ai";
 
@@ -70,7 +71,7 @@ export async function POST(request) {
   }
 
   const recent = seen.slice(0, 8).map((s) => s.slice(0, 200));
-  const langName = lang === "ru" ? "Russian" : "English";
+  const langName = LANGUAGE_NAMES[lang] || "English";
   const system = `You create ONE practice problem for a self-study learning app.
 Write entirely in ${langName}. Output pure Markdown of the problem statement ONLY — no solution, no answer, no hints, no preamble.
 Math in LaTeX: inline $...$, display $$...$$.

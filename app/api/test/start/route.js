@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { LANGUAGE_NAMES } from "../../../../lib/i18n";
 import { getUserFromRequest } from "../../../../lib/serverSupabase";
 import { getUserAI, callAILogged, underDailyLimit } from "../../../../lib/ai";
 import {
@@ -58,7 +59,7 @@ export async function POST(request) {
   }
 
   // Первое задание
-  const langName = lang === "ru" ? "Russian" : "English";
+  const langName = LANGUAGE_NAMES[lang] || "English";
   let task;
   try {
     task = await callAILogged(sb, user.id, "test_task", ai, {
