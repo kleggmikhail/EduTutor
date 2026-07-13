@@ -295,7 +295,7 @@ export default function Home() {
             <ChildrenView lang={lang} />
           </div>
         ) : selection && selectedTopic ? (
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-3xl mx-auto">
             <div className="text-sm opacity-60 mb-2">
               {selectedSubject?.name} · {selectedTopic.name}
             </div>
