@@ -31,6 +31,7 @@ export default function Sidebar({
     "w-full text-left px-3 py-2 rounded-lg hover:bg-black/5 transition text-sm";
   const [openSubjects, setOpenSubjects] = useState({});
   const [openTopics, setOpenTopics] = useState({});
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [ctx, setCtx] = useState(null); // {x, y, kind, id}
 
   useEffect(() => {
@@ -111,18 +112,44 @@ export default function Sidebar({
 
       {/* Верхняя часть: меню */}
       <nav className="px-2 space-y-1">
-        <button className={item} onClick={onLogout} title={userEmail}>
-          🚪 {t(lang, "logout")} · {userEmail}
+        <button
+          className={item}
+          onClick={() => setSettingsOpen((v) => !v)}
+          title={userEmail}
+        >
+          {settingsOpen ? "▾" : "▸"} ⚙️ {t(lang, "settings")}
         </button>
-        <button className={item} onClick={onOpenProfile}>
-          👤 {t(lang, "profile")}
-        </button>
-        <button className={item} onClick={onOpenTheme}>
-          🎨 {t(lang, "theme")}
-        </button>
-        <button className={item} onClick={onOpenApiKey}>
-          🔑 {t(lang, "apiKey")}
-        </button>
+        {settingsOpen && (
+          <div className="space-y-1">
+            <button className={`${item} pl-7`} onClick={onOpenProfile}>
+              👤 {t(lang, "profile")}
+            </button>
+            <button className={`${item} pl-7`} onClick={onOpenTheme}>
+              🎨 {t(lang, "theme")}
+            </button>
+            <button className={`${item} pl-7`} onClick={onOpenApiKey}>
+              🔑 {t(lang, "apiKey")}
+            </button>
+            <button
+              className={`${item} pl-7 ${
+                selection?.section === "children" ? "bg-black/10" : ""
+              }`}
+              onClick={() => onSelect({ section: "children" })}
+            >
+              👨‍👩‍👦 {t(lang, "children")}
+            </button>
+            <button className={`${item} pl-7`} onClick={onOpenParent}>
+              🔗 {t(lang, "parentShare")}
+            </button>
+            <button
+              className={`${item} pl-7`}
+              onClick={onLogout}
+              title={userEmail}
+            >
+              🚪 {t(lang, "logout")} · {userEmail}
+            </button>
+          </div>
+        )}
         <button className={item} onClick={onNewSubject}>
           ➕ {t(lang, "newSubject")}
         </button>
@@ -133,17 +160,6 @@ export default function Sidebar({
           onClick={() => onSelect({ section: "progress" })}
         >
           📊 {t(lang, "progress")}
-        </button>
-        <button
-          className={`${item} ${
-            selection?.section === "children" ? "bg-black/10" : ""
-          }`}
-          onClick={() => onSelect({ section: "children" })}
-        >
-          👨‍👩‍👦 {t(lang, "children")}
-        </button>
-        <button className={item} onClick={onOpenParent}>
-          🔗 {t(lang, "parentShare")}
         </button>
       </nav>
 
