@@ -52,14 +52,16 @@ export async function POST(request) {
 
   const langName = lang === "ru" ? "Russian" : "English";
   const system = `You grade a student's solution to a practice problem in a learning app.
-The student MUST show their reasoning steps, not just a final answer.
+The student MUST show the solution steps (the chain of work: transformations, calculations).
+A verbal explanation of WHY each step is done is welcome but NOT required — never penalize its absence.
+A bare final answer with no intermediate steps is unacceptable.
 Respond in ${langName}.
 Return ONLY valid JSON, no other text:
 {"correct": true|false, "feedback": "markdown string"}
 Rules for feedback:
 - If correct: short praise + note anything that could be cleaner.
 - If incorrect: point out exactly WHERE the mistake is and explain the misunderstood concept. Do NOT give the full correct solution — guide the student to retry.
-- If only a bare answer with no steps: mark correct=false and ask to show the reasoning.
+- If only a bare answer with no steps: mark correct=false and ask to show the solution steps.
 Math in LaTeX ($...$, $$...$$). Escape the JSON string properly.`;
 
   const textPart = `Problem:

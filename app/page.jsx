@@ -212,6 +212,16 @@ export default function Home() {
     return parts.join(" → ");
   }
 
+  // Для практики/теста темы с подтемами: задания покрывают все подтемы
+  function topicPathWithCoverage(topic) {
+    const children = topics.filter((x) => x.parent_id === topic.id);
+    const base = topicPath(topic);
+    if (!children.length) return base;
+    return `${base} [tasks must cover ALL subtopics: ${children
+      .map((c) => c.name)
+      .join("; ")}]`;
+  }
+
   if (!session) {
     return (
       <div className="h-screen flex items-center justify-center opacity-50">
@@ -237,7 +247,9 @@ export default function Home() {
         onLogout={logout}
         onComingSoon={comingSoon}
         onNewSubject={() => setModal({ type: "subject" })}
-        onNewTopic={(subjectId) => setModal({ type: "topic", subjectId })}
+        onNewTopic={(subjectId, parentId = null) =>
+          setModal({ type: "topic", subjectId, parentId })
+        }
         onDeleteSubject={deleteSubject}
         onDeleteTopic={deleteTopic}
         onSeed={seedAlgebra}
@@ -291,7 +303,7 @@ export default function Home() {
                 key={selectedTopic.id + lang}
                 lang={lang}
                 subjectName={selectedSubject?.name || ""}
-                topicPath={topicPath(selectedTopic)}
+                topicPath={topicPathWithCoverage(selectedTopic)}
                 topicId={selectedTopic.id}
               />
             ) : selection.section === "test" ? (
@@ -299,7 +311,7 @@ export default function Home() {
                 key={selectedTopic.id + lang + "test"}
                 lang={lang}
                 subjectName={selectedSubject?.name || ""}
-                topicPath={topicPath(selectedTopic)}
+                topicPath={topicPathWithCoverage(selectedTopic)}
                 topicId={selectedTopic.id}
               />
             ) : (
@@ -343,7 +355,7 @@ export default function Home() {
           onCreate={(name) =>
             modal.type === "subject"
               ? addSubject(name)
-              : addTopic(modal.subjectId, name)
+              : addTopic(modal.subjectId, name, modal.parentId || null)
           }
           onClose={() => setModal(null)}
         />

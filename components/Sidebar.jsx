@@ -45,7 +45,11 @@ export default function Sidebar({
 
   function TopicNode({ topic, depth }) {
     const children = topics.filter((x) => x.parent_id === topic.id);
+    const hasChildren = children.length > 0;
     const open = !!openTopics[topic.id];
+    // У темы с подтемами «Теория» скрыта — теория живёт в подтемах.
+    // Практика и Тест остаются: их задания покрывают все подтемы.
+    const sections = SECTIONS.filter((s) => s !== "theory" || !hasChildren);
     return (
       <div>
         <button
@@ -60,10 +64,20 @@ export default function Sidebar({
         </button>
         {open && (
           <div>
+            {/* Подтемы можно создавать только на первом уровне (глубина ≤ 2) */}
+            {depth === 1 && (
+              <button
+                className={`${item} text-accent`}
+                style={{ paddingLeft: 26 + depth * 14 }}
+                onClick={() => onNewTopic(topic.subject_id, topic.id)}
+              >
+                {t(lang, "newBlock")}
+              </button>
+            )}
             {children.map((c) => (
               <TopicNode key={c.id} topic={c} depth={depth + 1} />
             ))}
-            {SECTIONS.map((s) => {
+            {sections.map((s) => {
               const active =
                 selection?.topicId === topic.id && selection?.section === s;
               return (
